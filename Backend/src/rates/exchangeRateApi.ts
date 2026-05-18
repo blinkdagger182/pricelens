@@ -1,4 +1,4 @@
-import { config, requireEnv, supportedCurrencies } from "../config.js";
+import { config, requireEnv } from "../config.js";
 import type { RateMap } from "./types.js";
 
 type ExchangeRateApiResponse = {
@@ -42,9 +42,9 @@ export async function fetchLatestRates(baseCurrency = config.EXCHANGE_RATE_BASE_
   }
 
   const rates = Object.fromEntries(
-    supportedCurrencies
-      .filter((code) => typeof payload.conversion_rates?.[code] === "number")
-      .map((code) => [code, payload.conversion_rates![code]])
+    Object.entries(payload.conversion_rates)
+      .filter((entry): entry is [string, number] => typeof entry[1] === "number")
+      .map(([code, rate]) => [code.toUpperCase(), rate])
   );
 
   if (!rates[base]) {

@@ -4,6 +4,7 @@ struct ManualConverterView: View {
     @EnvironmentObject private var settings: SettingsStore
     @StateObject private var viewModel: ManualConverterViewModel
     @Environment(\.dismiss) private var dismiss
+    @State private var currencies = Currency.supported
 
     init() {
         _viewModel = StateObject(wrappedValue: ManualConverterViewModel())
@@ -36,6 +37,7 @@ struct ManualConverterView: View {
             }
             .task {
                 await viewModel.refreshRatesIfNeeded()
+                currencies = Currency.supported
             }
         }
     }
@@ -44,7 +46,7 @@ struct ManualConverterView: View {
         GlassCard {
             HStack {
                 Picker(title, selection: code) {
-                    ForEach(Currency.supported) { currency in
+                    ForEach(currencies) { currency in
                         Text("\(currency.flag) \(currency.code)").tag(currency.code)
                     }
                 }

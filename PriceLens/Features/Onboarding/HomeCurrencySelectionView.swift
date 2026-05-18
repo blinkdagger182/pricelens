@@ -3,15 +3,20 @@ import SwiftUI
 struct HomeCurrencySelectionView: View {
     @Binding var selectedCode: String
     let onContinue: () -> Void
+    @State private var currencies = Currency.supported
 
     var body: some View {
         CurrencySelectionContent(
             title: "Select Home Currency",
             subtitle: "Choose your home currency to see prices converted instantly.",
             selectedCode: $selectedCode,
-            currencies: Currency.supported,
+            currencies: currencies,
             onContinue: onContinue
         )
+        .task {
+            await CurrencyRateService.shared.refreshIfNeeded()
+            currencies = Currency.supported
+        }
     }
 }
 
@@ -21,6 +26,7 @@ struct CurrencySelectionContent: View {
     @Binding var selectedCode: String
     let currencies: [Currency]
     let onContinue: () -> Void
+    @State private var searchText = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -30,7 +36,7 @@ struct CurrencySelectionContent: View {
             }
             ScrollView {
                 LazyVStack(spacing: 10) {
-                    ForEach(currencies) { currency in
+                    ForEach(filteredCurrencies) { currency in
                         Button { selectedCode = currency.code } label: {
                             HStack(spacing: 12) {
                                 Text(currency.flag).font(.title3)
@@ -52,6 +58,16 @@ struct CurrencySelectionContent: View {
             PrimaryButton(title: "Continue", action: onContinue)
         }
         .padding(22)
+        .searchable(text: $searchText)
+    }
+
+    private var filteredCurrencies: [Currency] {
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !query.isEmpty else { return currencies }
+        return currencies.filter {
+            $0.code.lowercased().contains(query)
+                || $0.name.lowercased().contains(query)
+                || $0.symbol.lowercased().contains(query)
+        }
     }
 }
-

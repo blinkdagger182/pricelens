@@ -6,6 +6,7 @@ protocol CurrencyRateProviding {
 
 struct CachedExchangeRatePayload: Codable {
     let updatedAt: Date
+    let nextUpdateAt: Date?
     let provider: String
     let effectiveDate: String
     let ratesToMYR: [String: Decimal]
@@ -46,8 +47,17 @@ final class CurrencyRateService: CurrencyRateProviding {
         cachedPayload?.updatedAt
     }
 
+    var availableCurrencyCodes: [String] {
+        let cachedCodes = cachedPayload?.ratesToMYR.keys.map { $0.uppercased() } ?? []
+        if !cachedCodes.isEmpty {
+            return Array(Set(cachedCodes)).sorted()
+        }
+        let defaults = rates.keys.map { $0.uppercased() }
+        return Array(Set(defaults)).sorted()
+    }
+
     func refreshIfNeeded(force: Bool = false) async {
-        if !force, let updatedAt = cachedPayload?.updatedAt, Calendar.current.isDateInToday(updatedAt) {
+        if !force, let nextUpdateAt = cachedPayload?.nextUpdateAt, nextUpdateAt > Date() {
             return
         }
 
@@ -56,6 +66,7 @@ final class CurrencyRateService: CurrencyRateProviding {
             let ratesToMYR = convertBackendRatesToMYR(response)
             let payload = CachedExchangeRatePayload(
                 updatedAt: response.fetchedAt,
+                nextUpdateAt: response.nextUpdateAt,
                 provider: response.provider,
                 effectiveDate: response.effectiveDate,
                 ratesToMYR: ratesToMYR

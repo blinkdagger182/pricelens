@@ -3,9 +3,11 @@ import SwiftUI
 struct CurrencyPickerView: View {
     let title: String
     @Binding var selectedCode: String
+    @State private var currencies = Currency.supported
+    @State private var searchText = ""
 
     var body: some View {
-        List(Currency.supported) { currency in
+        List(filteredCurrencies) { currency in
             Button {
                 selectedCode = currency.code
             } label: {
@@ -24,6 +26,20 @@ struct CurrencyPickerView: View {
         .scrollContentBackground(.hidden)
         .background(AppTheme.background)
         .navigationTitle(title)
+        .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
+        .task {
+            await CurrencyRateService.shared.refreshIfNeeded()
+            currencies = Currency.supported
+        }
+    }
+
+    private var filteredCurrencies: [Currency] {
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !query.isEmpty else { return currencies }
+        return currencies.filter {
+            $0.code.lowercased().contains(query)
+                || $0.name.lowercased().contains(query)
+                || $0.symbol.lowercased().contains(query)
+        }
     }
 }
-
