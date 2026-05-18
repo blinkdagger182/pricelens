@@ -34,6 +34,9 @@ struct ManualConverterView: View {
                 viewModel.sourceCode = settings.travelCurrencyCode
                 viewModel.targetCode = settings.homeCurrencyCode
             }
+            .task {
+                await viewModel.refreshRatesIfNeeded()
+            }
         }
     }
 
@@ -80,4 +83,3 @@ struct ManualConverterView: View {
         }
     }
 }
-

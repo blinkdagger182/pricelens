@@ -25,6 +25,9 @@ targets:
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
+        PRICE_LENS_API_BASE_URL: "https://pricelens-backend.vercel.app"
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
         NSCameraUsageDescription: "PriceLens uses your camera to scan price tags and convert prices."
     settings:
       base:

@@ -23,9 +23,19 @@ final class ScannerViewModel: ObservableObject {
     private let parser = PriceParser()
     private let stabilizer = OverlayStabilizer()
     private let converter = ConversionEngine()
+    private let rateService = CurrencyRateService.shared
     private let haptics = HapticsService()
     private var lastProcess = Date.distantPast
     private var lastFoundCount = 0
+
+    init() {
+        usingFallbackRates = rateService.isUsingFallbackRates
+    }
+
+    func refreshRatesIfNeeded() async {
+        await rateService.refreshIfNeeded()
+        usingFallbackRates = rateService.isUsingFallbackRates
+    }
 
     func process(recognized: [(String, CGRect)], travelCurrency: String, homeCurrency: String, containerSize: CGSize, force: Bool = false) {
         guard !isFrozen else { return }

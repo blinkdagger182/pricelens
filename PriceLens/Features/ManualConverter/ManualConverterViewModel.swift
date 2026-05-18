@@ -8,6 +8,7 @@ final class ManualConverterViewModel: ObservableObject {
     @Published var amountText: String = "1200"
 
     private let converter = ConversionEngine()
+    private let rateService = CurrencyRateService.shared
 
     init(sourceCode: String = "JPY", targetCode: String = "MYR") {
         self.sourceCode = sourceCode
@@ -40,5 +41,9 @@ final class ManualConverterViewModel: ObservableObject {
     func swapCurrencies() {
         swap(&sourceCode, &targetCode)
     }
-}
 
+    func refreshRatesIfNeeded() async {
+        await rateService.refreshIfNeeded()
+        objectWillChange.send()
+    }
+}

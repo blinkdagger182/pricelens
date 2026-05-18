@@ -43,6 +43,7 @@
 		B65567CD6717ED1FA680D0C9 /* HistoryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFAE5BFEA6CB71C63B90F596 /* HistoryViewModel.swift */; };
 		B6A0982D333BFA9F940788AF /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BB8EC0D15026E9BF325104A /* EmptyStateView.swift */; };
 		C06A736BA037D1D9B6DD22EF /* View+Modifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30DF27E6B2349B23D0C3F360 /* View+Modifiers.swift */; };
+		C106F67D2641A480864A5F63 /* BackendRateClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 841BB2A5A5318EB60DC974AF /* BackendRateClient.swift */; };
 		C1152E78F339C6E1BA7A4D4A /* PriceLensApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 129425D08EC63D3BFFE08FA3 /* PriceLensApp.swift */; };
 		C7E90B0FF01AA71226B47D9D /* HomeCurrencySelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1828480853120E5C573F38E /* HomeCurrencySelectionView.swift */; };
 		C9560AC10710442D24BA53B8 /* PriceParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDB9E9BE1EC2618074E6D190 /* PriceParser.swift */; };
@@ -81,10 +82,11 @@
 		78A5F345BB3A4E029E2BFF11 /* TravelCurrencySelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TravelCurrencySelectionView.swift; sourceTree = "<group>"; };
 		7B36D17E768C01DC3A542C88 /* ScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScannerView.swift; sourceTree = "<group>"; };
 		7CFB7E7BCBF23022EF7FB8E4 /* GlassCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassCard.swift; sourceTree = "<group>"; };
+		841BB2A5A5318EB60DC974AF /* BackendRateClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackendRateClient.swift; sourceTree = "<group>"; };
 		848B50188CDC5B3A2475A924 /* ManualConverterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualConverterView.swift; sourceTree = "<group>"; };
 		8A5CD045B5AEB7DEC4CF985B /* ScanHistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanHistoryStore.swift; sourceTree = "<group>"; };
 		8D24B727FB0F34D5CC838F8D /* ScannerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScannerViewModel.swift; sourceTree = "<group>"; };
-		8E706249A2FB1960354C0EE2 /* PriceLens.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PriceLens.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		8E706249A2FB1960354C0EE2 /* PriceLens.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = PriceLens.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		923FA9533B06C6646BD731E2 /* ScannerControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScannerControlsView.swift; sourceTree = "<group>"; };
 		97F94D285DC5214B823D093F /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
 		AE6ABAB1DBBBF3C54A750D32 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -108,6 +110,7 @@
 		025ECDEF378F1A95F00F7EDC /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				841BB2A5A5318EB60DC974AF /* BackendRateClient.swift */,
 				742BB1E46D172DEFDF1C3080 /* CameraPermissionService.swift */,
 				F5F4DAB24B9E7D57869B897E /* ConversionEngine.swift */,
 				BA5C783CDC5C053A2FE4AF44 /* CurrencyRateService.swift */,
@@ -323,6 +326,8 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+				};
 			};
 			buildConfigurationList = DFE2C05782AD8C5E8AD57972 /* Build configuration list for PBXProject "PriceLens" */;
 			developmentRegion = en;
@@ -362,6 +367,7 @@
 				3A0E853081C9C7C18BC1CADE /* AppSettings.swift in Sources */,
 				57A2E9B2EF37162347A2C4E8 /* AppStorageKeys.swift in Sources */,
 				184C784E380914502D08A4B8 /* AppTheme.swift in Sources */,
+				C106F67D2641A480864A5F63 /* BackendRateClient.swift in Sources */,
 				1B81A91D22165CEE5A3C9751 /* CameraPermissionService.swift in Sources */,
 				09AA3438FD542FFFE71984F1 /* Color+Hex.swift in Sources */,
 				3F136AF39FDA0FBDFC3A94A0 /* ConversionEngine.swift in Sources */,
@@ -414,13 +420,12 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				DEVELOPMENT_TEAM = 8H5C9P92ZB;
 				INFOPLIST_FILE = PriceLens/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.riskcreatives.pricelens;
+				PRODUCT_BUNDLE_IDENTIFIER = com.pricelens.app;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -496,13 +501,12 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				DEVELOPMENT_TEAM = 8H5C9P92ZB;
 				INFOPLIST_FILE = PriceLens/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.riskcreatives.pricelens;
+				PRODUCT_BUNDLE_IDENTIFIER = com.pricelens.app;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};

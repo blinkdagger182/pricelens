@@ -36,6 +36,9 @@ struct ScannerView: View {
             .sheet(isPresented: $showHistory) { HistoryView() }
             .sheet(isPresented: $showManual) { ManualConverterView() }
             .sheet(isPresented: $showSettings) { SettingsView() }
+            .task {
+                await viewModel.refreshRatesIfNeeded()
+            }
             #if DEBUG
             .onDisappear {
                 stopDebugStream()
@@ -49,7 +52,6 @@ struct ScannerView: View {
             let size = cameraProxy.size
             ZStack {
                 scannerBackground(size: size)
-                LinearGradient(colors: [.black.opacity(0.78), .clear, .black.opacity(0.18)], startPoint: .top, endPoint: .center)
                 PriceOverlayLayer(items: viewModel.overlays, onTap: viewModel.tap)
                 topBar
                 #if DEBUG
@@ -102,7 +104,7 @@ struct ScannerView: View {
     }
 
     private var topBar: some View {
-        VStack {
+        VStack(spacing: 8) {
             HStack {
                 CurrencyPill(code: settings.homeCurrencyCode)
                 Spacer()
@@ -111,7 +113,7 @@ struct ScannerView: View {
                 CurrencyPill(code: settings.travelCurrencyCode)
             }
             .padding(.horizontal, 16)
-            .padding(.top, 54)
+            .padding(.top, 14)
             HStack {
                 if viewModel.usingFallbackRates {
                     Text("Fallback rates").font(.caption2.bold()).foregroundStyle(.black).padding(.horizontal, 9).padding(.vertical, 5).background(AppTheme.accent, in: Capsule())

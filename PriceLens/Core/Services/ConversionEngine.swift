@@ -3,7 +3,7 @@ import Foundation
 struct ConversionEngine {
     let rates: CurrencyRateProviding
 
-    init(rates: CurrencyRateProviding = CurrencyRateService()) {
+    init(rates: CurrencyRateProviding = CurrencyRateService.shared) {
         self.rates = rates
     }
 
@@ -19,4 +19,3 @@ struct ConversionEngine {
         return "1 \(source) = \(CurrencyFormatter.string(converted, code: target))"
     }
 }
-

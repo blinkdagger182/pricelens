@@ -1,0 +1,65 @@
+import type { Router } from "express";
+import express from "express";
+import { z } from "zod";
+import { config } from "../config.js";
+import { convertAmount, getLatestRates, syncLatestRates } from "../rates/rateService.js";
+
+export function createRouter(): Router {
+  const router = express.Router();
+
+  router.get("/health", (_request, response) => {
+    response.json({ ok: true, service: "pricelens-backend" });
+  });
+
+  router.get("/rates/latest", async (request, response, next) => {
+    try {
+      const rates = await getLatestRates(config.EXCHANGE_RATE_BASE_CURRENCY);
+      response.json(rates);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.get("/rates/convert", async (request, response, next) => {
+    try {
+      const query = z.object({
+        amount: z.coerce.number().positive(),
+        from: z.string().length(3),
+        to: z.string().length(3)
+      }).parse(request.query);
+      const rates = await getLatestRates(config.EXCHANGE_RATE_BASE_CURRENCY);
+      const convertedAmount = convertAmount(query.amount, query.from, query.to, rates);
+
+      response.json({
+        amount: query.amount,
+        from: query.from.toUpperCase(),
+        to: query.to.toUpperCase(),
+        convertedAmount,
+        rates
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/tasks/sync-rates", async (request, response, next) => {
+    try {
+      if (config.CRON_SECRET) {
+        const authorization = request.header("authorization");
+        const isVercelCron = request.header("x-vercel-cron") === "1";
+        if (!isVercelCron && authorization !== `Bearer ${config.CRON_SECRET}`) {
+          response.status(401).json({ error: "Unauthorized" });
+          return;
+        }
+      }
+
+      const query = z.object({ force: z.coerce.boolean().optional() }).parse(request.query);
+      const result = await syncLatestRates(config.EXCHANGE_RATE_BASE_CURRENCY, query.force ?? false);
+      response.json({ ok: true, ...result });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  return router;
+}

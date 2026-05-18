@@ -5,5 +5,5 @@ enum AppStorageKeys {
     static let homeCurrencyCode = "homeCurrencyCode"
     static let travelCurrencyCode = "travelCurrencyCode"
     static let historyItems = "historyItems"
+    static let cachedExchangeRates = "cachedExchangeRates"
 }
-
