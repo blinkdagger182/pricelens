@@ -8,6 +8,10 @@ struct ScannerView: View {
     @State private var showHistory = false
     @State private var showManual = false
     @State private var showSettings = false
+    #if DEBUG
+    @State private var isDebugStreaming = false
+    @State private var debugSampleTask: Task<Void, Never>?
+    #endif
 
     var body: some View {
         GeometryReader { proxy in
@@ -30,6 +34,17 @@ struct ScannerView: View {
             .sheet(isPresented: $showHistory) { HistoryView() }
             .sheet(isPresented: $showManual) { ManualConverterView() }
             .sheet(isPresented: $showSettings) { SettingsView() }
+            .task {
+                while !Task.isCancelled {
+                    try? await Task.sleep(for: .milliseconds(500))
+                    viewModel.pruneStaleOverlays(homeCurrency: settings.homeCurrencyCode, containerSize: proxy.size)
+                }
+            }
+            #if DEBUG
+            .onDisappear {
+                stopDebugStream()
+            }
+            #endif
         }
     }
 
@@ -75,8 +90,8 @@ struct ScannerView: View {
     private func debugControls(size: CGSize) -> some View {
         VStack {
             Spacer()
-            Button("Use Sample Prices") {
-                viewModel.process(recognized: OCRSnapshotService().debugSamples(), travelCurrency: settings.travelCurrencyCode, homeCurrency: settings.homeCurrencyCode, containerSize: size, force: true)
+            Button(isDebugStreaming ? "Stop Sample Stream" : "Live Sample Prices") {
+                isDebugStreaming ? stopDebugStream() : startDebugStream(size: size)
             }
             .font(.caption.bold())
             .foregroundStyle(.black)
@@ -86,6 +101,33 @@ struct ScannerView: View {
             .padding(.bottom, 122)
         }
     }
+
+    private func startDebugStream(size: CGSize) {
+        isDebugStreaming = true
+        debugSampleTask?.cancel()
+        debugSampleTask = Task {
+            var frame = 0
+            while !Task.isCancelled {
+                let samples = OCRSnapshotService().debugSamples(frame: frame)
+                await MainActor.run {
+                    viewModel.process(
+                        recognized: samples,
+                        travelCurrency: settings.travelCurrencyCode,
+                        homeCurrency: settings.homeCurrencyCode,
+                        containerSize: size,
+                        force: true
+                    )
+                }
+                frame += 1
+                try? await Task.sleep(for: .milliseconds(280))
+            }
+        }
+    }
+
+    private func stopDebugStream() {
+        isDebugStreaming = false
+        debugSampleTask?.cancel()
+        debugSampleTask = nil
+    }
     #endif
 }
-

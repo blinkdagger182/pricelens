@@ -30,15 +30,7 @@ struct DataScannerRepresentable: UIViewControllerRepresentable {
         )
         scanner.delegate = context.coordinator
         context.coordinator.scanner = scanner
-        Task { @MainActor in
-            do {
-                try scanner.startScanning()
-                onReady()
-            } catch {
-                onUnavailable()
-            }
-        }
-        return scanner
+        return ScannerHostViewController(scanner: scanner, onReady: onReady, onUnavailable: onUnavailable)
         #endif
     }
 
@@ -48,10 +40,59 @@ struct DataScannerRepresentable: UIViewControllerRepresentable {
         Coordinator(onRecognizedItems: onRecognizedItems)
     }
 
+    final class ScannerHostViewController: UIViewController {
+        private let scanner: DataScannerViewController
+        private let onReady: () -> Void
+        private let onUnavailable: () -> Void
+        private var isScanning = false
+
+        init(scanner: DataScannerViewController, onReady: @escaping () -> Void, onUnavailable: @escaping () -> Void) {
+            self.scanner = scanner
+            self.onReady = onReady
+            self.onUnavailable = onUnavailable
+            super.init(nibName: nil, bundle: nil)
+        }
+
+        @available(*, unavailable)
+        required init?(coder: NSCoder) {
+            fatalError("init(coder:) has not been implemented")
+        }
+
+        override func viewDidLoad() {
+            super.viewDidLoad()
+            addChild(scanner)
+            scanner.view.frame = view.bounds
+            scanner.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+            view.addSubview(scanner.view)
+            scanner.didMove(toParent: self)
+        }
+
+        override func viewDidAppear(_ animated: Bool) {
+            super.viewDidAppear(animated)
+            startIfNeeded()
+        }
+
+        override func viewWillDisappear(_ animated: Bool) {
+            super.viewWillDisappear(animated)
+            scanner.stopScanning()
+            isScanning = false
+        }
+
+        private func startIfNeeded() {
+            guard !isScanning else { return }
+            do {
+                try scanner.startScanning()
+                isScanning = true
+                onReady()
+            } catch {
+                onUnavailable()
+            }
+        }
+    }
+
     final class Coordinator: NSObject, DataScannerViewControllerDelegate {
         var onRecognizedItems: ([(String, CGRect)]) -> Void
         weak var scanner: DataScannerViewController?
-        private var items: [UUID: (String, CGRect)] = [:]
 
         init(onRecognizedItems: @escaping ([(String, CGRect)]) -> Void) {
             self.onRecognizedItems = onRecognizedItems
@@ -89,4 +130,3 @@ struct DataScannerRepresentable: UIViewControllerRepresentable {
         }
     }
 }
-

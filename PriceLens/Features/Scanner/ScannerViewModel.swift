@@ -41,6 +41,18 @@ final class ScannerViewModel: ObservableObject {
         lastFoundCount = overlays.count
     }
 
+    func pruneStaleOverlays(homeCurrency: String, containerSize: CGSize) {
+        let active = stabilizer.update(candidates: [], targetCurrency: homeCurrency, converter: converter, containerSize: containerSize)
+        guard active.count != overlays.count else { return }
+        withAnimation(.easeOut(duration: 0.2)) {
+            overlays = active
+            if overlays.isEmpty, state == .pricesDetected {
+                state = .scanning
+            }
+        }
+        lastFoundCount = overlays.count
+    }
+
     func scannerBecameAvailable() {
         state = .scanning
     }
