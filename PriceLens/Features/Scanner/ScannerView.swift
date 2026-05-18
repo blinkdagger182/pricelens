@@ -8,10 +8,7 @@ struct ScannerView: View {
     @State private var showHistory = false
     @State private var showManual = false
     @State private var showSettings = false
-    #if DEBUG
-    @State private var isDebugStreaming = false
-    @State private var debugSampleTask: Task<Void, Never>?
-    #endif
+    @State private var selectedCurrencyRole: ScannerCurrencyRole?
 
     private let bottomChromeHeight: CGFloat = 152
     private let cameraCornerRadius: CGFloat = 34
@@ -36,14 +33,15 @@ struct ScannerView: View {
             .sheet(isPresented: $showHistory) { HistoryView() }
             .sheet(isPresented: $showManual) { ManualConverterView() }
             .sheet(isPresented: $showSettings) { SettingsView() }
+            .sheet(item: $selectedCurrencyRole) { role in
+                CurrencyQuickSheet(role: role)
+                    .presentationDetents([.medium])
+                    .presentationDragIndicator(.visible)
+            }
             .task {
                 await viewModel.refreshRatesIfNeeded()
+                await settings.updateTravelCurrencyFromCurrentLocationIfNeeded()
             }
-            #if DEBUG
-            .onDisappear {
-                stopDebugStream()
-            }
-            #endif
         }
     }
 
@@ -54,9 +52,6 @@ struct ScannerView: View {
                 scannerBackground(size: size)
                 PriceOverlayLayer(items: viewModel.overlays, onTap: viewModel.tap)
                 topBar
-                #if DEBUG
-                debugControls(size: size)
-                #endif
             }
             .clipShape(RoundedRectangle(cornerRadius: cameraCornerRadius, style: .continuous))
             .overlay(
@@ -106,11 +101,17 @@ struct ScannerView: View {
     private var topBar: some View {
         VStack(spacing: 8) {
             HStack {
-                CurrencyPill(code: settings.homeCurrencyCode)
+                Button { selectedCurrencyRole = .home } label: {
+                    CurrencyPill(code: settings.homeCurrencyCode)
+                }
+                .buttonStyle(.plain)
                 Spacer()
                 Text("PriceLens").font(.headline.bold()).foregroundStyle(.white)
                 Spacer()
-                CurrencyPill(code: settings.travelCurrencyCode)
+                Button { selectedCurrencyRole = .travel } label: {
+                    CurrencyPill(code: settings.travelCurrencyCode)
+                }
+                .buttonStyle(.plain)
             }
             .padding(.horizontal, 16)
             .padding(.top, 14)
@@ -119,55 +120,16 @@ struct ScannerView: View {
                     Text("Fallback rates").font(.caption2.bold()).foregroundStyle(.black).padding(.horizontal, 9).padding(.vertical, 5).background(AppTheme.accent, in: Capsule())
                 }
                 Spacer()
-                Button { showSettings = true } label: { Image(systemName: "gearshape").font(.headline).foregroundStyle(.white) }
+                Button { showSettings = true } label: {
+                    Image(systemName: "gearshape")
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                }
             }
             .padding(.horizontal, 18)
             Spacer()
         }
     }
-
-    #if DEBUG
-    private func debugControls(size: CGSize) -> some View {
-        VStack {
-            Spacer()
-            Button(isDebugStreaming ? "Stop Sample Stream" : "Live Sample Prices") {
-                isDebugStreaming ? stopDebugStream() : startDebugStream(size: size)
-            }
-            .font(.caption.bold())
-            .foregroundStyle(.black)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(AppTheme.accent, in: Capsule())
-            .padding(.bottom, 18)
-        }
-    }
-
-    private func startDebugStream(size: CGSize) {
-        isDebugStreaming = true
-        debugSampleTask?.cancel()
-        debugSampleTask = Task {
-            var frame = 0
-            while !Task.isCancelled {
-                let samples = OCRSnapshotService().debugSamples(frame: frame)
-                await MainActor.run {
-                    viewModel.process(
-                        recognized: samples,
-                        travelCurrency: settings.travelCurrencyCode,
-                        homeCurrency: settings.homeCurrencyCode,
-                        containerSize: size,
-                        force: true
-                    )
-                }
-                frame += 1
-                try? await Task.sleep(for: .milliseconds(280))
-            }
-        }
-    }
-
-    private func stopDebugStream() {
-        isDebugStreaming = false
-        debugSampleTask?.cancel()
-        debugSampleTask = nil
-    }
-    #endif
 }

@@ -6,4 +6,6 @@ enum AppStorageKeys {
     static let travelCurrencyCode = "travelCurrencyCode"
     static let historyItems = "historyItems"
     static let cachedExchangeRates = "cachedExchangeRates"
+    static let favoriteCurrencyCodes = "favoriteCurrencyCodes"
+    static let hasAutoDetectedTravelCurrency = "hasAutoDetectedTravelCurrency"
 }
