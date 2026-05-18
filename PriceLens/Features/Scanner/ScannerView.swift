@@ -13,19 +13,21 @@ struct ScannerView: View {
     @State private var debugSampleTask: Task<Void, Never>?
     #endif
 
+    private let bottomChromeHeight: CGFloat = 152
+    private let cameraCornerRadius: CGFloat = 34
+
     var body: some View {
         GeometryReader { proxy in
-            ZStack {
-                scannerBackground(size: proxy.size)
-                LinearGradient(colors: [.black.opacity(0.82), .clear], startPoint: .top, endPoint: .center).ignoresSafeArea()
-                PriceOverlayLayer(items: viewModel.overlays, onTap: viewModel.tap)
-                topBar
-                VStack { Spacer(); ScannerControlsView(isFrozen: $viewModel.isFrozen, showHistory: { showHistory = true }, showManual: { showManual = true }) }
-                #if DEBUG
-                debugControls(size: proxy.size)
-                #endif
+            VStack(spacing: 0) {
+                cameraViewport
+                    .frame(height: max(420, proxy.size.height - bottomChromeHeight))
+                    .padding(.horizontal, 6)
+                    .padding(.top, 2)
+                bottomChrome
+                    .frame(height: bottomChromeHeight)
             }
-            .ignoresSafeArea()
+            .frame(width: proxy.size.width, height: proxy.size.height)
+            .background(Color.black.ignoresSafeArea())
             .sheet(item: $viewModel.selectedOverlay) { overlay in
                 ScanResultDetailSheet(overlay: overlay) { history.add(viewModel.historyItem(from: overlay)) }
                     .presentationDetents([.medium])
@@ -34,17 +36,53 @@ struct ScannerView: View {
             .sheet(isPresented: $showHistory) { HistoryView() }
             .sheet(isPresented: $showManual) { ManualConverterView() }
             .sheet(isPresented: $showSettings) { SettingsView() }
-            .task {
-                while !Task.isCancelled {
-                    try? await Task.sleep(for: .milliseconds(500))
-                    viewModel.pruneStaleOverlays(homeCurrency: settings.homeCurrencyCode, containerSize: proxy.size)
-                }
-            }
             #if DEBUG
             .onDisappear {
                 stopDebugStream()
             }
             #endif
+        }
+    }
+
+    private var cameraViewport: some View {
+        GeometryReader { cameraProxy in
+            let size = cameraProxy.size
+            ZStack {
+                scannerBackground(size: size)
+                LinearGradient(colors: [.black.opacity(0.78), .clear, .black.opacity(0.18)], startPoint: .top, endPoint: .center)
+                PriceOverlayLayer(items: viewModel.overlays, onTap: viewModel.tap)
+                topBar
+                #if DEBUG
+                debugControls(size: size)
+                #endif
+            }
+            .clipShape(RoundedRectangle(cornerRadius: cameraCornerRadius, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: cameraCornerRadius, style: .continuous)
+                    .strokeBorder(Color.white.opacity(0.12), lineWidth: 1)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: cameraCornerRadius, style: .continuous)
+                    .strokeBorder(Color.black.opacity(0.95), lineWidth: 3)
+            )
+            .shadow(color: .black.opacity(0.55), radius: 18, y: 8)
+            .task(id: "\(Int(size.width))x\(Int(size.height))") {
+                while !Task.isCancelled {
+                    try? await Task.sleep(for: .milliseconds(500))
+                    viewModel.pruneStaleOverlays(homeCurrency: settings.homeCurrencyCode, containerSize: size)
+                }
+            }
+        }
+    }
+
+    private var bottomChrome: some View {
+        ZStack {
+            AppTheme.background
+            ScannerControlsView(
+                isFrozen: $viewModel.isFrozen,
+                showHistory: { showHistory = true },
+                showManual: { showManual = true }
+            )
         }
     }
 
@@ -73,7 +111,7 @@ struct ScannerView: View {
                 CurrencyPill(code: settings.travelCurrencyCode)
             }
             .padding(.horizontal, 16)
-            .padding(.top, 58)
+            .padding(.top, 54)
             HStack {
                 if viewModel.usingFallbackRates {
                     Text("Fallback rates").font(.caption2.bold()).foregroundStyle(.black).padding(.horizontal, 9).padding(.vertical, 5).background(AppTheme.accent, in: Capsule())
@@ -98,7 +136,7 @@ struct ScannerView: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
             .background(AppTheme.accent, in: Capsule())
-            .padding(.bottom, 122)
+            .padding(.bottom, 18)
         }
     }
 

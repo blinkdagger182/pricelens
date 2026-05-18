@@ -15,6 +15,7 @@
 		1506919165C2B6B5864E509D /* String+PriceParsing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6092811BEF31D6926DED483E /* String+PriceParsing.swift */; };
 		184C784E380914502D08A4B8 /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7CA8516FB6D1CED72CD8641 /* AppTheme.swift */; };
 		1B81A91D22165CEE5A3C9751 /* CameraPermissionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 742BB1E46D172DEFDF1C3080 /* CameraPermissionService.swift */; };
+		1F8A3F9A45FF0D52FC59A9B2 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DD790813A023E280CE76CDAC /* Assets.xcassets */; };
 		2874864287FDFDCF409DA11B /* CurrencyFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B87D7ECECCFBC3A33086CDBC /* CurrencyFormatter.swift */; };
 		2B0AF2A9E811CAD6943B60D8 /* CurrencyRateService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA5C783CDC5C053A2FE4AF44 /* CurrencyRateService.swift */; };
 		330208BFF520091203BC9EBD /* ScanHistoryItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33DD5A3EB33E03E977183275 /* ScanHistoryItem.swift */; };
@@ -93,6 +94,7 @@
 		CFAE5BFEA6CB71C63B90F596 /* HistoryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryViewModel.swift; sourceTree = "<group>"; };
 		D0D33645B394EDA9876183E9 /* Currency.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Currency.swift; sourceTree = "<group>"; };
 		D7CA8516FB6D1CED72CD8641 /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
+		DD790813A023E280CE76CDAC /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		DDB9E9BE1EC2618074E6D190 /* PriceParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PriceParser.swift; sourceTree = "<group>"; };
 		E166088308D8D380416131B1 /* ExchangeRate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExchangeRate.swift; sourceTree = "<group>"; };
 		E1828480853120E5C573F38E /* HomeCurrencySelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeCurrencySelectionView.swift; sourceTree = "<group>"; };
@@ -150,6 +152,7 @@
 		20563DBB5F3F07B1D7079D6E /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				DD790813A023E280CE76CDAC /* Assets.xcassets */,
 				EF419D485A90936C57E1BDB4 /* Info.plist */,
 			);
 			path = Resources;
@@ -299,6 +302,7 @@
 			buildConfigurationList = 4045A9A845EF9863DCB8ACE5 /* Build configuration list for PBXNativeTarget "PriceLens" */;
 			buildPhases = (
 				67ADDB82EB8F59BF655B042A /* Sources */,
+				1FE55129A26B88E3B10CF709 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -338,6 +342,17 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		1FE55129A26B88E3B10CF709 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1F8A3F9A45FF0D52FC59A9B2 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		67ADDB82EB8F59BF655B042A /* Sources */ = {
@@ -397,7 +412,7 @@
 		11761CF207B49355BFE6D3E7 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = "";
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				DEVELOPMENT_TEAM = 8H5C9P92ZB;
 				INFOPLIST_FILE = PriceLens/Resources/Info.plist;
@@ -479,7 +494,7 @@
 		5F7E9DAE6E08A760AB96FD10 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = "";
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				DEVELOPMENT_TEAM = 8H5C9P92ZB;
 				INFOPLIST_FILE = PriceLens/Resources/Info.plist;
