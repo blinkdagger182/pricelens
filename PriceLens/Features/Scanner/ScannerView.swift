@@ -9,6 +9,7 @@ struct ScannerView: View {
     @State private var showManual = false
     @State private var showSettings = false
     @State private var selectedCurrencyRole: ScannerCurrencyRole?
+    @State private var fullPickerRole: ScannerCurrencyRole?
 
     private let bottomChromeHeight: CGFloat = 152
     private let cameraCornerRadius: CGFloat = 34
@@ -33,10 +34,8 @@ struct ScannerView: View {
             .sheet(isPresented: $showHistory) { HistoryView() }
             .sheet(isPresented: $showManual) { ManualConverterView() }
             .sheet(isPresented: $showSettings) { SettingsView() }
-            .sheet(item: $selectedCurrencyRole) { role in
-                CurrencyQuickSheet(role: role)
-                    .presentationDetents([.medium])
-                    .presentationDragIndicator(.visible)
+            .sheet(item: $fullPickerRole) { role in
+                CurrencyPickerView(title: role.title, selectedCode: binding(for: role))
             }
             .task {
                 await viewModel.refreshRatesIfNeeded()
@@ -52,6 +51,13 @@ struct ScannerView: View {
                 scannerBackground(size: size)
                 PriceOverlayLayer(items: viewModel.overlays, onTap: viewModel.tap)
                 topBar
+                if let selectedCurrencyRole {
+                    currencyPanel(for: selectedCurrencyRole)
+                        .padding(.top, 47)
+                        .padding(.horizontal, 16)
+                        .transition(.scale(scale: 0.94, anchor: selectedCurrencyRole == .home ? .topLeading : .topTrailing).combined(with: .opacity))
+                        .zIndex(20)
+                }
             }
             .clipShape(RoundedRectangle(cornerRadius: cameraCornerRadius, style: .continuous))
             .overlay(
@@ -101,14 +107,14 @@ struct ScannerView: View {
     private var topBar: some View {
         VStack(spacing: 8) {
             HStack {
-                Button { selectedCurrencyRole = .home } label: {
+                Button { toggleCurrencyPanel(.home) } label: {
                     CurrencyPill(code: settings.homeCurrencyCode)
                 }
                 .buttonStyle(.plain)
                 Spacer()
                 Text("PriceLens").font(.headline.bold()).foregroundStyle(.white)
                 Spacer()
-                Button { selectedCurrencyRole = .travel } label: {
+                Button { toggleCurrencyPanel(.travel) } label: {
                     CurrencyPill(code: settings.travelCurrencyCode)
                 }
                 .buttonStyle(.plain)
@@ -131,5 +137,47 @@ struct ScannerView: View {
             .padding(.horizontal, 18)
             Spacer()
         }
+    }
+
+    private func currencyPanel(for role: ScannerCurrencyRole) -> some View {
+        HStack {
+            if role == .travel { Spacer() }
+            CurrencyAnchoredPanel(
+                role: role,
+                showAllCurrencies: {
+                    selectedCurrencyRole = nil
+                    fullPickerRole = role
+                },
+                dismiss: {
+                    withAnimation(.spring(response: 0.24, dampingFraction: 0.86)) {
+                        selectedCurrencyRole = nil
+                    }
+                }
+            )
+            if role == .home { Spacer() }
+        }
+        .frame(maxHeight: .infinity, alignment: .top)
+    }
+
+    private func toggleCurrencyPanel(_ role: ScannerCurrencyRole) {
+        withAnimation(.spring(response: 0.24, dampingFraction: 0.86)) {
+            selectedCurrencyRole = selectedCurrencyRole == role ? nil : role
+        }
+    }
+
+    private func binding(for role: ScannerCurrencyRole) -> Binding<String> {
+        Binding(
+            get: {
+                role == .home ? settings.homeCurrencyCode : settings.travelCurrencyCode
+            },
+            set: { code in
+                switch role {
+                case .home:
+                    settings.selectHomeCurrency(code)
+                case .travel:
+                    settings.selectTravelCurrency(code)
+                }
+            }
+        )
     }
 }
