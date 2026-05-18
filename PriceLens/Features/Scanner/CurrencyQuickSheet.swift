@@ -28,11 +28,13 @@ struct CurrencyAnchoredPanel: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            arrow
-                .padding(.leading, role == .home ? 28 : 0)
-                .padding(.trailing, role == .travel ? 28 : 0)
-                .frame(maxWidth: .infinity, alignment: role == .home ? .leading : .trailing)
+        ZStack(alignment: role == .home ? .topLeading : .topTrailing) {
+            Triangle()
+                .fill(.black.opacity(0.90))
+                .frame(width: 22, height: 12)
+                .overlay(Triangle().stroke(AppTheme.accent.opacity(0.42), lineWidth: 1))
+                .offset(x: role == .home ? 26 : -26, y: 0)
+                .zIndex(2)
 
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
@@ -61,7 +63,7 @@ struct CurrencyAnchoredPanel: View {
                             select(currency.code)
                         } label: {
                             HStack(spacing: 10) {
-                                Text(currency.flag)
+                                CurrencyFlagView(currency: currency)
                                 Text(currency.code)
                                     .font(.headline)
                                     .foregroundStyle(.white)
@@ -102,17 +104,11 @@ struct CurrencyAnchoredPanel: View {
             }
             .padding(14)
             .frame(width: 286)
-            .background(.black.opacity(0.86), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .background(.black.opacity(0.90), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(AppTheme.accent.opacity(0.45), lineWidth: 1))
             .shadow(color: AppTheme.accent.opacity(0.16), radius: 18, y: 8)
+            .padding(.top, 10)
         }
-    }
-
-    private var arrow: some View {
-        Triangle()
-            .fill(.black.opacity(0.86))
-            .frame(width: 18, height: 10)
-            .overlay(Triangle().stroke(AppTheme.accent.opacity(0.45), lineWidth: 1))
     }
 
     private func select(_ code: String) {

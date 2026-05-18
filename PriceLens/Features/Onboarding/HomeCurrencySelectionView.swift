@@ -39,7 +39,7 @@ struct CurrencySelectionContent: View {
                     ForEach(filteredCurrencies) { currency in
                         Button { selectedCode = currency.code } label: {
                             HStack(spacing: 12) {
-                                Text(currency.flag).font(.title3)
+                                CurrencyFlagView(currency: currency)
                                 Text(currency.code).font(.headline)
                                 Text(currency.name).font(.subheadline).foregroundStyle(AppTheme.textSecondary)
                                 Spacer()

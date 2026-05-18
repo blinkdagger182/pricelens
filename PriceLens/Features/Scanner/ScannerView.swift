@@ -35,7 +35,14 @@ struct ScannerView: View {
             .sheet(isPresented: $showManual) { ManualConverterView() }
             .sheet(isPresented: $showSettings) { SettingsView() }
             .sheet(item: $fullPickerRole) { role in
-                CurrencyPickerView(title: role.title, selectedCode: binding(for: role))
+                NavigationStack {
+                    CurrencyPickerView(
+                        title: role.title,
+                        selectedCode: binding(for: role),
+                        dismissOnSelection: true,
+                        showsDoneButton: true
+                    )
+                }
             }
             .task {
                 await viewModel.refreshRatesIfNeeded()

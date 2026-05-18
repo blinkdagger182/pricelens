@@ -47,7 +47,7 @@ struct ManualConverterView: View {
             HStack {
                 Picker(title, selection: code) {
                     ForEach(currencies) { currency in
-                        Text("\(currency.flag) \(currency.code)").tag(currency.code)
+                        Text("\(currency.flag == "¤" ? currency.code : currency.flag) \(currency.code)").tag(currency.code)
                     }
                 }
                 .pickerStyle(.menu)

@@ -5,7 +5,7 @@ struct HistoryRowView: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Text(Currency.find(item.sourceCurrencyCode).flag).font(.title2)
+            CurrencyFlagView(currency: Currency.find(item.sourceCurrencyCode))
             VStack(alignment: .leading, spacing: 4) {
                 Text(CurrencyFormatter.string(item.originalAmount, code: item.sourceCurrencyCode)).font(.headline).foregroundStyle(.white)
                 Text("\(item.sourceCurrencyCode) → \(item.targetCurrencyCode)").font(.caption).foregroundStyle(AppTheme.textSecondary)
@@ -20,4 +20,3 @@ struct HistoryRowView: View {
         .padding(14)
     }
 }
-
