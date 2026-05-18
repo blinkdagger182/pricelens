@@ -24,7 +24,14 @@ struct CurrencyAnchoredPanel: View {
     }
 
     private var favorites: [Currency] {
-        Array(settings.favoriteCurrencies.prefix(5))
+        var codes = settings.favoriteCurrencyCodes.filter { $0 != selectedCode }
+        codes.insert(selectedCode, at: 0)
+        return Array(Currency.currencies(for: Array(codes.prefix(5))))
+            .sorted { lhs, rhs in
+                if lhs.code == selectedCode { return true }
+                if rhs.code == selectedCode { return false }
+                return lhs.code < rhs.code
+            }
     }
 
     var body: some View {

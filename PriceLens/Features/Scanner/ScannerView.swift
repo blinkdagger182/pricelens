@@ -59,6 +59,16 @@ struct ScannerView: View {
                 PriceOverlayLayer(items: viewModel.overlays, onTap: viewModel.tap)
                 topBar
                 if let selectedCurrencyRole {
+                    Color.black.opacity(0.42)
+                        .ignoresSafeArea()
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            withAnimation(.spring(response: 0.24, dampingFraction: 0.86)) {
+                                self.selectedCurrencyRole = nil
+                            }
+                        }
+                        .transition(.opacity)
+                        .zIndex(10)
                     currencyPanel(for: selectedCurrencyRole)
                         .padding(.top, 47)
                         .padding(.horizontal, 16)
