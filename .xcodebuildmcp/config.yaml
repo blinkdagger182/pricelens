@@ -1,0 +1,9 @@
+schemaVersion: 1
+sessionDefaults:
+  projectPath: /Users/rizhanruslan/Developer/PriceLens/PriceLens.xcodeproj
+  scheme: PriceLens
+  configuration: Debug
+  simulatorId: ED8BD268-9698-471B-A6D1-B137143D2EE8
+  bundleId: com.pricelens.app
+  simulatorName: iPhone 17
+  simulatorPlatform: iOS Simulator
