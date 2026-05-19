@@ -61,15 +61,10 @@ struct OnboardingDemoScreenView: View {
         let prep = smoothstep(0.72, 1.0, phaseProgress)
         return ZStack {
             leatherBackdrop
-            bagSilhouette
-                .opacity(Double(1 - prep))
-            tagCard
-                .scaleEffect(lerp(1, 1.55, prep))
-                .offset(x: 0, y: lerp(24, -4, prep))
 
             VStack {
                 Spacer()
-                Text("Point at a shelf price")
+                Text("Align with the price tag")
                     .font(.subheadline.bold())
                     .foregroundStyle(.white)
                     .padding(.horizontal, 14)
@@ -78,6 +73,16 @@ struct OnboardingDemoScreenView: View {
                     .padding(.bottom, 22)
             }
             .opacity(Double(1 - prep))
+
+            Image(systemName: "viewfinder")
+                .font(.system(size: 42, weight: .semibold))
+                .foregroundStyle(AppTheme.accent.opacity(0.65))
+                .opacity(Double(1 - prep))
+
+            tagCard
+                .scaleEffect(1.55)
+                .offset(x: 0, y: -4)
+                .opacity(Double(prep))
 
             viewfinderCorners(opacity: 0.35 + phaseProgress * 0.25)
         }

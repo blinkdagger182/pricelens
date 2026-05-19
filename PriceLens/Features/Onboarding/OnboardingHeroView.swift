@@ -9,15 +9,25 @@ struct OnboardingHeroView: View {
             let elapsed = max(0, ProcessInfo.processInfo.systemUptime - animationStartTime)
             let phase = OnboardingHeroStory.coarsePhase(at: elapsed)
             let u = OnboardingHeroStory.normalizedTime(elapsed)
+            let (_, progress) = OnboardingHeroStory.phase(at: elapsed)
+            let cardProgress = phase == .reveal ? smoothstep(0.0, 0.55, progress) : 0
 
-            ZStack {
-                ambientGlow
-                iPhone3DHeroSceneView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            VStack(spacing: 10) {
+                ZStack {
+                    ambientGlow
+                    iPhone3DHeroSceneView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .opacity(phase == .reveal ? Double(1 - cardProgress) : 1)
+                    standaloneConversionCard(progress: cardProgress)
+                        .opacity(Double(cardProgress))
+                        .scaleEffect(0.88 + 0.12 * cardProgress)
+                }
+                .frame(height: 372)
+
                 storyCaption(phase: phase, cycleT: u)
             }
         }
-        .frame(height: 390)
+        .frame(height: 428)
         .onAppear {
             animationStartTime = ProcessInfo.processInfo.systemUptime
             withAnimation(.easeInOut(duration: 2.4).repeatForever(autoreverses: true)) {
@@ -42,16 +52,19 @@ struct OnboardingHeroView: View {
     }
 
     private func storyCaption(phase: OnboardingHeroStoryPhase, cycleT: Double) -> some View {
-        VStack {
+        VStack(spacing: 6) {
             Text(captionTitle(phase))
                 .font(.caption.bold())
                 .foregroundStyle(.white.opacity(0.92))
                 .padding(.horizontal, 14)
                 .padding(.vertical, 8)
                 .background(.black.opacity(0.72), in: Capsule())
-                .padding(.top, 8)
-            Spacer()
+            Text(captionSubtitle(phase))
+                .font(.caption)
+                .foregroundStyle(AppTheme.textSecondary)
+                .multilineTextAlignment(.center)
         }
+        .frame(height: 58, alignment: .top)
         .allowsHitTesting(false)
     }
 
@@ -63,25 +76,52 @@ struct OnboardingHeroView: View {
         }
     }
 
-    private func floatingConversion(phase: OnboardingHeroStoryPhase, elapsed: TimeInterval) -> some View {
-        let show = phase == .reveal
-        let pulse = 0.95 + 0.05 * CGFloat(sin(elapsed * 3.5))
-        return VStack(alignment: .leading, spacing: 4) {
-            Text("¥12,800")
-                .font(.caption.monospacedDigit().bold())
-                .foregroundStyle(.white)
-            Text("RM 398.40")
-                .font(.title3.bold().monospacedDigit())
-                .foregroundStyle(AppTheme.accent)
+    private func captionSubtitle(_ phase: OnboardingHeroStoryPhase) -> String {
+        switch phase {
+        case .framing: return "Aim at the price tag before you scan."
+        case .scanning: return "On-device OCR locks onto the price."
+        case .reveal: return "The converted price is shown clearly."
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(.black.opacity(0.82), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(AppTheme.accent.opacity(0.85), lineWidth: 1))
-        .shadow(color: AppTheme.accent.opacity(0.35), radius: 18, y: 4)
-        .offset(x: 0, y: 128)
-        .scaleEffect(show ? pulse : 0.75)
-        .opacity(show ? 1 : 0)
-        .animation(.spring(response: 0.55, dampingFraction: 0.82), value: show)
+    }
+
+    private func standaloneConversionCard(progress: CGFloat) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Travel Adapter")
+                    .font(.headline.bold())
+                    .foregroundStyle(.white.opacity(0.82))
+                Spacer()
+                Circle()
+                    .fill(AppTheme.accent)
+                    .frame(width: 10, height: 10)
+                    .shadow(color: AppTheme.accent.opacity(0.7), radius: 12)
+            }
+            Text("¥12,800")
+                .font(.title2.bold())
+                .monospacedDigit()
+                .foregroundStyle(.white)
+            Divider().background(.white.opacity(0.18))
+            Text("RM 398.40")
+                .font(.system(size: 54, weight: .heavy))
+                .monospacedDigit()
+                .minimumScaleFactor(0.75)
+                .foregroundStyle(AppTheme.accent)
+                .shadow(color: AppTheme.accent.opacity(0.55), radius: 26, y: 4)
+            Text("JPY → MYR · converted in place")
+                .font(.subheadline.bold())
+                .foregroundStyle(AppTheme.textSecondary)
+        }
+        .padding(24)
+        .frame(width: 326, alignment: .leading)
+        .background(.black.opacity(0.88), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 24).stroke(AppTheme.accent.opacity(0.95), lineWidth: 1.4))
+        .shadow(color: AppTheme.accent.opacity(0.38), radius: 30, y: 10)
+        .offset(y: -8 + (1 - progress) * 18)
+    }
+
+    private func smoothstep(_ edge0: Double, _ edge1: Double, _ value: Double) -> CGFloat {
+        guard edge1 > edge0 else { return value >= edge1 ? 1 : 0 }
+        let x = min(max((value - edge0) / (edge1 - edge0), 0), 1)
+        return CGFloat(x * x * (3 - 2 * x))
     }
 }

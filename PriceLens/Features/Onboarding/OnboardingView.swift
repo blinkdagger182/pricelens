@@ -22,7 +22,7 @@ struct OnboardingView: View {
     private var welcome: some View {
         VStack(spacing: 18) {
             OnboardingHeroView()
-                .padding(.top, 18)
+                .padding(.top, 6)
             VStack(spacing: 10) {
                 Text("PriceLens").font(.largeTitle.bold())
                 Text("Currency Camera for Travel").font(.headline).foregroundStyle(AppTheme.textSecondary)

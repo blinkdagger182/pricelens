@@ -74,8 +74,11 @@ struct iPhone3DHeroSceneView: UIViewRepresentable {
         private let bagRoot = SCNNode()
         private let iphonePivot = SCNNode()
         private let modelContainer = SCNNode()
+        private let laserRoot = SCNNode()
 
         private var rimLightNode: SCNNode?
+        private var laserCoreNode: SCNNode?
+        private var laserGlowNode: SCNNode?
         private var screenNode: SCNNode?
         private var isLoadingPhone = false
         private var displayLink: CADisplayLink?
@@ -168,7 +171,9 @@ struct iPhone3DHeroSceneView: UIViewRepresentable {
             scene.rootNode.addChildNode(worldRoot)
             worldRoot.addChildNode(bagRoot)
             worldRoot.addChildNode(iphonePivot)
+            worldRoot.addChildNode(laserRoot)
             iphonePivot.addChildNode(modelContainer)
+            buildLaserBeam()
         }
 
         func buildBagProp() {
@@ -192,6 +197,33 @@ struct iPhone3DHeroSceneView: UIViewRepresentable {
                     mat.diffuse.contents = img
                 }
             }
+        }
+
+        private func buildLaserBeam() {
+            laserRoot.childNodes.forEach { $0.removeFromParentNode() }
+
+            let coreMaterial = SCNMaterial()
+            coreMaterial.lightingModel = .constant
+            coreMaterial.diffuse.contents = UIColor(AppTheme.accent)
+            coreMaterial.emission.contents = UIColor(AppTheme.accent)
+            coreMaterial.emission.intensity = 1.2
+
+            let glowMaterial = SCNMaterial()
+            glowMaterial.lightingModel = .constant
+            glowMaterial.diffuse.contents = UIColor(AppTheme.accent).withAlphaComponent(0.24)
+            glowMaterial.emission.contents = UIColor(AppTheme.accent).withAlphaComponent(0.45)
+            glowMaterial.emission.intensity = 0.9
+            glowMaterial.blendMode = .add
+
+            let core = SCNNode(geometry: SCNCylinder(radius: 0.00055, height: 0.1))
+            core.geometry?.materials = [coreMaterial]
+            let glow = SCNNode(geometry: SCNCylinder(radius: 0.0022, height: 0.1))
+            glow.geometry?.materials = [glowMaterial]
+            laserRoot.addChildNode(glow)
+            laserRoot.addChildNode(core)
+            laserCoreNode = core
+            laserGlowNode = glow
+            laserRoot.opacity = 0
         }
 
         func startDisplayLink() {
@@ -254,6 +286,7 @@ struct iPhone3DHeroSceneView: UIViewRepresentable {
             bagRoot.position = L.bagPosition
             bagRoot.eulerAngles = L.bagEuler
             bagRoot.opacity = L.bagOpacity
+            updateLaser(at: t, layout: L)
 
             if let key = keyLightNode {
                 key.eulerAngles = SCNVector3(
@@ -262,6 +295,38 @@ struct iPhone3DHeroSceneView: UIViewRepresentable {
                     0.12
                 )
             }
+        }
+
+        private func updateLaser(at t: TimeInterval, layout L: WorldLayout) {
+            let phase = OnboardingHeroStory.coarsePhase(at: t)
+            let (_, progress) = OnboardingHeroStory.phase(at: t)
+            let show = phase == .framing ? CGFloat(1 - min(max(progress, 0), 1) * 0.22) : 0
+            let flicker = CGFloat(0.72 + 0.28 * max(0, sin(t * 22)) + 0.1 * sin(t * 53))
+            laserRoot.opacity = max(0, min(1, show * flicker))
+
+            let start = SCNVector3(
+                L.phonePosition.x + 0.035,
+                L.phonePosition.y + 0.03,
+                L.phonePosition.z + 0.026
+            )
+            let end = SCNVector3(
+                L.bagPosition.x + 0.022,
+                L.bagPosition.y + 0.075,
+                L.bagPosition.z + 0.004
+            )
+            positionLaser(laserCoreNode, from: start, to: end)
+            positionLaser(laserGlowNode, from: start, to: end)
+        }
+
+        private func positionLaser(_ node: SCNNode?, from start: SCNVector3, to end: SCNVector3) {
+            guard let node, let cylinder = node.geometry as? SCNCylinder else { return }
+            let dx = end.x - start.x
+            let dy = end.y - start.y
+            let dz = end.z - start.z
+            let length = sqrt(dx * dx + dy * dy + dz * dz)
+            cylinder.height = CGFloat(length)
+            node.position = SCNVector3((start.x + end.x) * 0.5, (start.y + end.y) * 0.5, (start.z + end.z) * 0.5)
+            node.look(at: end, up: SCNVector3(0, 1, 0), localFront: SCNVector3(0, 1, 0))
         }
 
         private func pulseRimLight(elapsed: CFTimeInterval) {
