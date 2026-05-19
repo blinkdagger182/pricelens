@@ -1,0 +1,425 @@
+import SwiftUI
+
+/// Phone-screen story: framing the bag tag → active scan → big conversion (no external screenshot).
+struct OnboardingDemoScreenView: View {
+    var phase: OnboardingHeroStoryPhase
+    var phaseProgress: Double
+    var beamOffset: CGFloat
+    var elapsed: TimeInterval
+
+    private let cameraCorner: CGFloat = 34
+    private let bottomChromeHeight: CGFloat = 152
+    private let canvasW: CGFloat = 390
+    private let canvasH: CGFloat = 844
+
+    private let itemName = "Travel Adapter"
+    private let yen = "¥12,800"
+    private let ringgit = "RM 398.40"
+
+    var body: some View {
+        VStack(spacing: 0) {
+            cameraViewport
+                .frame(height: canvasH - bottomChromeHeight - 2)
+                .padding(.horizontal, 6)
+                .padding(.top, 2)
+            bottomChrome
+                .frame(height: bottomChromeHeight)
+        }
+        .frame(width: canvasW, height: canvasH)
+        .background(Color.black)
+    }
+
+    private var cameraViewport: some View {
+        ZStack {
+            blendedFeed
+            .clipShape(RoundedRectangle(cornerRadius: cameraCorner, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: cameraCorner, style: .continuous)
+                    .strokeBorder(Color.white.opacity(0.12), lineWidth: 1)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: cameraCorner, style: .continuous)
+                    .strokeBorder(Color.black.opacity(0.92), lineWidth: 2.5)
+            )
+            topChrome
+        }
+    }
+
+    private var blendedFeed: some View {
+        let reveal = phase == .reveal ? smoothstep(0.0, 0.72, phaseProgress) : 0
+        return ZStack {
+            if phase == .framing {
+                framingFeed
+            } else {
+                scanningFeed
+                    .opacity(1 - reveal)
+                revealFeed
+                    .opacity(reveal)
+            }
+        }
+    }
+
+    // MARK: - Framing (see the bag + tag in the world)
+
+    private var framingFeed: some View {
+        ZStack {
+            leatherBackdrop
+            bagSilhouette
+            tagCard
+                .offset(y: 24)
+                .scaleEffect(1 + 0.02 * CGFloat(sin(elapsed * 1.8)))
+
+            VStack {
+                Spacer()
+                Text("Point at a shelf price")
+                    .font(.subheadline.bold())
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(.black.opacity(0.72), in: Capsule())
+                    .padding(.bottom, 22)
+            }
+
+            viewfinderCorners(opacity: 0.35 + phaseProgress * 0.25)
+        }
+    }
+
+    private var leatherBackdrop: some View {
+        ZStack {
+            LinearGradient(
+                colors: [Color(hex: "#D8C4A6"), Color(hex: "#745C43"), Color(hex: "#221913")],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            RadialGradient(
+                colors: [Color.white.opacity(0.28), .clear],
+                center: .init(x: 0.36, y: 0.22),
+                startRadius: 20,
+                endRadius: 280
+            )
+            VStack(spacing: 42) {
+                ForEach(0..<5, id: \.self) { _ in
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(Color.black.opacity(0.18))
+                        .frame(height: 10)
+                }
+            }
+            .padding(.top, 116)
+        }
+    }
+
+    private var bagSilhouette: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [Color(hex: "#F6F2E8"), Color(hex: "#B7CBD1")],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .frame(width: 208, height: 176)
+                .overlay(
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("WORLD PLUG")
+                            .font(.caption.weight(.black))
+                            .foregroundStyle(.black.opacity(0.46))
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color.black.opacity(0.72))
+                            .frame(width: 72, height: 54)
+                            .overlay(Image(systemName: "powerplug.fill").font(.title).foregroundStyle(.white))
+                        Text(itemName)
+                            .font(.headline.bold())
+                            .foregroundStyle(.black.opacity(0.82))
+                    }
+                    .padding(18),
+                    alignment: .topLeading
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.36), lineWidth: 1.2)
+                )
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .fill(Color(hex: "#F8EFE1"))
+                .frame(width: 118, height: 48)
+                .overlay(
+                    Text(yen)
+                        .font(.system(size: 24, weight: .black, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundStyle(.black)
+                )
+                .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black.opacity(0.22), lineWidth: 1))
+                .offset(x: 58, y: 44)
+        }
+        .offset(y: 40)
+        .shadow(color: .black.opacity(0.55), radius: 20, y: 10)
+    }
+
+    private var tagCard: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .fill(Color(hex: "#F4E8D8"))
+                .frame(width: 130, height: 84)
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .strokeBorder(Color.black.opacity(0.2), lineWidth: 1)
+            VStack(spacing: 4) {
+                Text(itemName.uppercased())
+                    .font(.caption2)
+                    .fontWeight(.heavy)
+                    .foregroundStyle(.black.opacity(0.5))
+                Text(yen)
+                    .font(.system(size: 24, weight: .black, design: .rounded))
+                    .monospacedDigit()
+                    .foregroundStyle(.black.opacity(0.9))
+            }
+        }
+        .rotationEffect(.degrees(-3 + sin(elapsed * 1.1) * 1.2))
+        .offset(x: 0, y: 10)
+    }
+
+    // MARK: - Scanning
+
+    private var scanningFeed: some View {
+        ZStack {
+            leatherBackdrop
+            bagSilhouette.opacity(0.45)
+            tagCard
+                .scaleEffect(1.55)
+                .offset(x: 0, y: -4)
+
+            scannerBeam
+            dashedHuntBox
+            ZStack {
+                ScannerCorners(color: .white, lineWidth: 3.4)
+                    .frame(width: 226, height: 96)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(itemName)
+                        .font(.caption.bold())
+                        .foregroundStyle(.white.opacity(0.82))
+                    HStack(spacing: 6) {
+                        Text(yen)
+                            .font(.title3.bold())
+                            .monospacedDigit()
+                            .foregroundStyle(.white)
+                        Image(systemName: "arrow.right")
+                            .foregroundStyle(AppTheme.accent)
+                        Text("RM 398")
+                            .font(.headline.bold())
+                            .monospacedDigit()
+                            .foregroundStyle(AppTheme.accent)
+                    }
+                    Text("Detected · JPY → MYR")
+                        .font(.caption.bold())
+                        .foregroundStyle(AppTheme.accent)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .frame(width: 224, alignment: .leading)
+                .background(.black.opacity(0.84), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 14).stroke(AppTheme.accent.opacity(0.9), lineWidth: 1.2))
+                .shadow(color: AppTheme.accent.opacity(0.34), radius: 16, y: 4)
+                .offset(x: 0, y: 88)
+            }
+            .offset(y: -18)
+
+            viewfinderCorners(opacity: 0.55)
+            liveBadge
+        }
+    }
+
+    private var dashedHuntBox: some View {
+        RoundedRectangle(cornerRadius: 10, style: .continuous)
+            .strokeBorder(
+                style: StrokeStyle(lineWidth: 1.5, dash: [8, 6], dashPhase: CGFloat(elapsed * 28))
+            )
+            .foregroundStyle(AppTheme.accent.opacity(0.55))
+            .frame(width: 216, height: 96)
+            .offset(y: 24)
+    }
+
+    private var scannerBeam: some View {
+        let shimmer = CGFloat(sin(elapsed * 10)) * 0.5 + 0.5
+        return ZStack {
+            Rectangle()
+                .fill(
+                    LinearGradient(
+                        stops: [
+                            .init(color: .clear, location: 0),
+                            .init(color: AppTheme.accent.opacity(0.12), location: 0.42),
+                            .init(color: AppTheme.accent.opacity(0.65 + shimmer * 0.2), location: 0.5),
+                            .init(color: AppTheme.accent.opacity(0.12), location: 0.58),
+                            .init(color: .clear, location: 1),
+                        ],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .frame(height: 28)
+                .blur(radius: 6)
+                .offset(y: beamOffset * 0.35)
+            Rectangle()
+                .fill(
+                    LinearGradient(
+                        colors: [.clear, .white.opacity(0.9), .clear],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .frame(height: 2)
+                .offset(y: beamOffset * 0.35)
+        }
+    }
+
+    // MARK: - Reveal
+
+    private var revealFeed: some View {
+        ZStack {
+            RadialGradient(
+                colors: [Color(hex: "#1A2215"), Color.black],
+                center: .center,
+                startRadius: 40,
+                endRadius: 340
+            )
+
+            VStack(spacing: 18) {
+                tagCard
+                    .scaleEffect(1.55)
+                    .offset(y: -4)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text(itemName)
+                            .font(.caption.bold())
+                            .foregroundStyle(.white.opacity(0.76))
+                        Spacer()
+                        Circle().fill(AppTheme.accent).frame(width: 8, height: 8)
+                    }
+                    Text(yen)
+                        .font(.title2.bold())
+                        .monospacedDigit()
+                        .foregroundStyle(.white.opacity(0.92))
+                    Divider().background(.white.opacity(0.14))
+                    Text(ringgit)
+                        .font(.system(size: 42, weight: .heavy))
+                        .monospacedDigit()
+                        .foregroundStyle(AppTheme.accent)
+                        .shadow(color: AppTheme.accent.opacity(0.35), radius: 16, y: 2)
+                    Text("JPY → MYR · overlay anchored to tag")
+                        .font(.caption.bold())
+                        .foregroundStyle(AppTheme.textSecondary)
+                }
+                .padding(16)
+                .frame(maxWidth: 286)
+                .background(.black.opacity(0.86), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 20).stroke(AppTheme.accent.opacity(0.85), lineWidth: 1.2))
+                .shadow(color: AppTheme.accent.opacity(0.3), radius: 22, y: 8)
+            }
+            .padding(.horizontal, 24)
+
+            viewfinderCorners(opacity: 0.2 + Double(phaseProgress) * 0.2)
+        }
+    }
+
+    // MARK: - Chrome
+
+    private var topChrome: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            HStack {
+                CurrencyPill(code: "MYR").scaleEffect(0.92)
+                Spacer()
+                Text("PriceLens").font(.headline.bold()).foregroundStyle(.white)
+                Spacer()
+                CurrencyPill(code: "JPY").scaleEffect(0.92)
+            }
+            HStack(spacing: 6) {
+                Image(systemName: "text.viewfinder")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(AppTheme.accent)
+                Text("Live camera · OCR prices · Instant conversion")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.white.opacity(0.78))
+                    .lineLimit(2)
+                Spacer(minLength: 0)
+            }
+            Spacer()
+        }
+        .padding(.horizontal, 14)
+        .padding(.top, 12)
+        .allowsHitTesting(false)
+    }
+
+    private var liveBadge: some View {
+        VStack {
+            HStack {
+                HStack(spacing: 5) {
+                    Circle()
+                        .fill(Color.red.opacity(0.92))
+                        .frame(width: 7, height: 7)
+                    Text("LIVE")
+                        .font(.caption2.bold())
+                        .foregroundStyle(.white)
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(Capsule().fill(Color.red.opacity(0.38)))
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 56)
+            Spacer()
+        }
+        .allowsHitTesting(false)
+    }
+
+    private func viewfinderCorners(opacity: Double) -> some View {
+        let o = opacity * (0.85 + 0.15 * sin(elapsed * 2.5))
+        return GeometryReader { proxy in
+            let w = proxy.size.width
+            let h = proxy.size.height
+            let len: CGFloat = 26
+            Path { p in
+                p.move(to: CGPoint(x: len, y: 0)); p.addLine(to: .zero); p.addLine(to: CGPoint(x: 0, y: len))
+                p.move(to: CGPoint(x: w - len, y: 0)); p.addLine(to: CGPoint(x: w, y: 0)); p.addLine(to: CGPoint(x: w, y: len))
+                p.move(to: CGPoint(x: 0, y: h - len)); p.addLine(to: CGPoint(x: 0, y: h)); p.addLine(to: CGPoint(x: len, y: h))
+                p.move(to: CGPoint(x: w - len, y: h)); p.addLine(to: CGPoint(x: w, y: h)); p.addLine(to: CGPoint(x: w, y: h - len))
+            }
+            .stroke(AppTheme.accent.opacity(o), style: StrokeStyle(lineWidth: 2, lineCap: .round))
+        }
+        .allowsHitTesting(false)
+    }
+
+    private var bottomChrome: some View {
+        ZStack {
+            AppTheme.background
+            HStack {
+                chromeControl(icon: "clock.arrow.circlepath", title: "History")
+                Spacer()
+                ZStack {
+                    Circle().fill(.white).frame(width: 66, height: 66)
+                    Circle().stroke(AppTheme.accent, lineWidth: 4).frame(width: 76, height: 76)
+                    Image(systemName: "viewfinder").foregroundStyle(.black).font(.title2.bold())
+                }
+                Spacer()
+                chromeControl(icon: "arrow.left.arrow.right", title: "Convert")
+            }
+            .padding(.horizontal, 26)
+            .padding(.bottom, 28)
+        }
+        .allowsHitTesting(false)
+    }
+
+    private func chromeControl(icon: String, title: String) -> some View {
+        VStack(spacing: 5) {
+            Image(systemName: icon).font(.title3)
+            Text(title).font(.caption2)
+        }
+        .foregroundStyle(.white)
+        .frame(width: 72)
+    }
+
+    private func smoothstep(_ edge0: Double, _ edge1: Double, _ value: Double) -> CGFloat {
+        guard edge1 > edge0 else { return value >= edge1 ? 1 : 0 }
+        let x = min(max((value - edge0) / (edge1 - edge0), 0), 1)
+        return CGFloat(x * x * (3 - 2 * x))
+    }
+}

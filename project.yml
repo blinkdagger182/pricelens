@@ -12,6 +12,14 @@ targets:
   PriceLens:
     type: application
     platform: iOS
+    dependencies:
+      - framework: Vendor/GLTFKit2.xcframework
+        embed: true
+    preBuildScripts:
+      - name: Fetch GLTFKit2
+        shell: /bin/bash
+        script: "${SRCROOT}/scripts/fetch-gltfkit2.sh"
+        basedOnDependencyAnalysis: false
     sources:
       - PriceLens
     resources:

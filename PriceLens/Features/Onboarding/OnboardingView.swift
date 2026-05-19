@@ -20,13 +20,13 @@ struct OnboardingView: View {
     }
 
     private var welcome: some View {
-        VStack(spacing: 28) {
-            Spacer()
-            appIcon
+        VStack(spacing: 18) {
+            OnboardingHeroView()
+                .padding(.top, 18)
             VStack(spacing: 10) {
                 Text("PriceLens").font(.largeTitle.bold())
                 Text("Currency Camera for Travel").font(.headline).foregroundStyle(AppTheme.textSecondary)
-                Text("See the real price. Travel smarter.")
+                Text("Point your camera at price tags, menus, or receipts and see converted prices float in place.")
                     .font(.subheadline)
                     .foregroundStyle(AppTheme.textSecondary)
                     .multilineTextAlignment(.center)
@@ -90,4 +90,3 @@ struct ScannerCorners: View {
         }
     }
 }
-

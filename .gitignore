@@ -1,11 +1,6 @@
-.DS_Store
-DerivedData/
-.build/
-node_modules/
-.env
-.env.*
-!.env.example
-dist/
-coverage/
-*.log
+# Xcode user state
+*.xcuserstate
+xcuserdata/
 
+# Vendored binary (downloaded by scripts/fetch-gltfkit2.sh)
+Vendor/GLTFKit2.xcframework/
