@@ -106,11 +106,11 @@ struct iPhone3DHeroSceneView: UIViewRepresentable {
         )
 
         private let layoutHero = WorldLayout(
-            cameraPosition: SCNVector3(-0.001, 0.027, 0.284),
-            cameraTarget: SCNVector3(0, 0.026, 0.02),
-            phonePosition: SCNVector3(-0.014, 0.045, 0.064),
+            cameraPosition: SCNVector3(-0.001, 0.028, 0.326),
+            cameraTarget: SCNVector3(0, 0.018, 0.02),
+            phonePosition: SCNVector3(-0.01, 0.022, 0.058),
             phoneEuler: SCNVector3(-0.13, -0.04, 0),
-            phoneScale: 1.2,
+            phoneScale: 1.02,
             bagPosition: SCNVector3(-0.12, -0.035, -0.072),
             bagEuler: SCNVector3(-0.08, -0.18, 0.02),
             bagOpacity: 0
@@ -242,18 +242,10 @@ struct iPhone3DHeroSceneView: UIViewRepresentable {
                 .interpolated(to: layoutScanning, Float(toScan))
                 .interpolated(to: layoutHero, Float(toReveal))
 
-            let framing = OnboardingHeroStory.coarsePhase(at: t) == .framing
-            let breathe: Float = framing ? Float(sin(t * 1.9)) * 0.0035 : 0
-
             guard let cam = cameraNode else { return }
-            var camPos = L.cameraPosition
-            camPos.x += breathe * 0.55
-            camPos.y += breathe
-            cam.position = camPos
+            cam.position = L.cameraPosition
 
-            var target = L.cameraTarget
-            target.x += Float(sin(t * 0.9)) * 0.007 * (1 - Float(toReveal))
-            cam.look(at: target, up: SCNVector3(0, 1, 0), localFront: SCNVector3(0, 0, -1))
+            cam.look(at: L.cameraTarget, up: SCNVector3(0, 1, 0), localFront: SCNVector3(0, 0, -1))
 
             iphonePivot.position = L.phonePosition
             iphonePivot.eulerAngles = L.phoneEuler

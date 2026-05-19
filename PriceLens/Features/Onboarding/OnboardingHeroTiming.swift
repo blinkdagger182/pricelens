@@ -31,11 +31,7 @@ enum OnboardingHeroStory {
         let coarse = coarsePhase(at: elapsed)
         switch coarse {
         case .framing:
-            if u < tEstablish {
-                return (.framing, u / tEstablish)
-            }
-            let w = (u - tEstablish) / (tStartScan - tEstablish)
-            return (.framing, w.clamped(to: 0...1))
+            return (.framing, (u / tStartScan).clamped(to: 0...1))
         case .scanning:
             let w = (u - tStartScan) / (tStartReveal - tStartScan)
             return (.scanning, w.clamped(to: 0...1))
@@ -49,14 +45,14 @@ enum OnboardingHeroStory {
         let u = normalizedTime(elapsed)
         // Skip the intermediate side-by-side scanning pose. The visual story now goes
         // directly from the opening composition into the expanded phone scene.
-        let toReveal = smoothstep(tEstablish, tStartScan, u)
+        let toReveal = easeIn(tEstablish, tStartScan, u)
         return (0, toReveal)
     }
 
-    fileprivate static func smoothstep(_ e0: TimeInterval, _ e1: TimeInterval, _ x: TimeInterval) -> Double {
+    fileprivate static func easeIn(_ e0: TimeInterval, _ e1: TimeInterval, _ x: TimeInterval) -> Double {
         guard e1 > e0 else { return x >= e1 ? 1 : 0 }
         let t = Double((x - e0) / (e1 - e0)).clamped(to: 0...1)
-        return t * t * (3 - 2 * t)
+        return t * t * t
     }
 }
 

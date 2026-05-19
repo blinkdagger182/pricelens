@@ -46,15 +46,11 @@ struct OnboardingDemoScreenView: View {
     }
 
     private var blendedFeed: some View {
-        let reveal = phase == .reveal ? smoothstep(0.0, 0.72, phaseProgress) : 0
         return ZStack {
             if phase == .framing {
                 framingFeed
             } else {
-                scanningFeed
-                    .opacity(1 - reveal)
-                revealFeed
-                    .opacity(reveal)
+                scanRevealFeed(reveal: phase == .reveal ? smoothstep(0.0, 0.8, phaseProgress) : 0)
             }
         }
     }
@@ -62,12 +58,14 @@ struct OnboardingDemoScreenView: View {
     // MARK: - Framing (see the bag + tag in the world)
 
     private var framingFeed: some View {
-        ZStack {
+        let prep = smoothstep(0.72, 1.0, phaseProgress)
+        return ZStack {
             leatherBackdrop
             bagSilhouette
+                .opacity(Double(1 - prep))
             tagCard
-                .offset(y: 24)
-                .scaleEffect(1 + 0.02 * CGFloat(sin(elapsed * 1.8)))
+                .scaleEffect(lerp(1, 1.55, prep))
+                .offset(x: 0, y: lerp(24, -4, prep))
 
             VStack {
                 Spacer()
@@ -79,6 +77,7 @@ struct OnboardingDemoScreenView: View {
                     .background(.black.opacity(0.72), in: Capsule())
                     .padding(.bottom, 22)
             }
+            .opacity(Double(1 - prep))
 
             viewfinderCorners(opacity: 0.35 + phaseProgress * 0.25)
         }
@@ -97,14 +96,6 @@ struct OnboardingDemoScreenView: View {
                 startRadius: 20,
                 endRadius: 280
             )
-            VStack(spacing: 42) {
-                ForEach(0..<5, id: \.self) { _ in
-                    RoundedRectangle(cornerRadius: 3)
-                        .fill(Color.black.opacity(0.18))
-                        .frame(height: 10)
-                }
-            }
-            .padding(.top, 116)
         }
     }
 
@@ -173,11 +164,44 @@ struct OnboardingDemoScreenView: View {
                     .foregroundStyle(.black.opacity(0.9))
             }
         }
-        .rotationEffect(.degrees(-3 + sin(elapsed * 1.1) * 1.2))
+        .rotationEffect(.degrees(-3))
         .offset(x: 0, y: 10)
     }
 
     // MARK: - Scanning
+
+    private func scanRevealFeed(reveal: CGFloat) -> some View {
+        let easedReveal = easeIn(Double(reveal))
+        let scanOut = 1 - smoothstep(0.78, 1.0, easedReveal)
+        let darken = 0.54 * CGFloat(easedReveal)
+
+        return ZStack {
+            leatherBackdrop
+
+            tagCard
+                .scaleEffect(lerp(1.55, 1.34, CGFloat(easedReveal)))
+                .offset(x: 0, y: lerp(-4, -220, CGFloat(easedReveal)))
+                .opacity(Double(1 - 0.12 * CGFloat(easedReveal)))
+
+            Color.black.opacity(darken)
+
+            scannerBeam
+                .offset(y: 20)
+                .opacity(Double(scanOut))
+            dashedHuntBox
+                .opacity(Double(scanOut))
+            ScannerCorners(color: .white, lineWidth: 3.4)
+                .frame(width: 156, height: 36)
+                .offset(y: 20)
+                .opacity(Double(scanOut))
+
+            emphasizedConversionCard(reveal: CGFloat(easedReveal))
+                .offset(y: lerp(150, 124, CGFloat(easedReveal)))
+
+            viewfinderCorners(opacity: Double(0.55 * scanOut + 0.22 * CGFloat(easedReveal)))
+            liveBadge.opacity(Double(scanOut))
+        }
+    }
 
     private var scanningFeed: some View {
         ZStack {
@@ -227,14 +251,91 @@ struct OnboardingDemoScreenView: View {
         }
     }
 
+    private var scanOverlayCard: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(itemName)
+                .font(.caption.bold())
+                .foregroundStyle(.white.opacity(0.82))
+            HStack(spacing: 6) {
+                Text(yen)
+                    .font(.title3.bold())
+                    .monospacedDigit()
+                    .foregroundStyle(.white)
+                Image(systemName: "arrow.right")
+                    .foregroundStyle(AppTheme.accent)
+                Text("RM 398")
+                    .font(.headline.bold())
+                    .monospacedDigit()
+                    .foregroundStyle(AppTheme.accent)
+            }
+            Text("Detected · JPY → MYR")
+                .font(.caption.bold())
+                .foregroundStyle(AppTheme.accent)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .frame(width: 224, alignment: .leading)
+        .background(.black.opacity(0.84), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(AppTheme.accent.opacity(0.9), lineWidth: 1.2))
+        .shadow(color: AppTheme.accent.opacity(0.34), radius: 16, y: 4)
+    }
+
+    private func emphasizedConversionCard(reveal: CGFloat) -> some View {
+        let width: CGFloat = 286
+        let corner: CGFloat = 18
+        let amountSize: CGFloat = 34
+        let emphasis = smoothstep(0.24, 0.82, Double(reveal))
+        let glow = lerp(0.28, 0.62, emphasis)
+
+        return VStack(alignment: .leading, spacing: 7) {
+            HStack {
+                Text(itemName)
+                    .font(.caption.bold())
+                    .foregroundStyle(.white.opacity(0.8))
+                Spacer()
+                Circle()
+                    .fill(AppTheme.accent)
+                    .frame(width: 8, height: 8)
+                    .shadow(color: AppTheme.accent.opacity(glow), radius: 8)
+            }
+            Text(yen)
+                .font(.system(size: 23, weight: .bold))
+                .monospacedDigit()
+                .foregroundStyle(.white.opacity(0.92))
+            Divider()
+                .background(.white.opacity(0.14))
+                .scaleEffect(x: lerp(0.78, 1, emphasis), anchor: .leading)
+            Text(ringgit)
+                .font(.system(size: amountSize, weight: .heavy))
+                .monospacedDigit()
+                .foregroundStyle(AppTheme.accent)
+                .shadow(color: AppTheme.accent.opacity(glow), radius: lerp(12, 24, emphasis), y: 2)
+                .overlay(alignment: .bottom) {
+                    Rectangle()
+                        .fill(AppTheme.accent.opacity(0.18 * emphasis))
+                        .frame(height: 8)
+                        .offset(y: -4)
+                }
+            Text(reveal < 0.45 ? "Detected price · JPY → MYR" : "JPY → MYR · converted in place")
+                .font(.caption.bold())
+                .foregroundStyle(reveal < 0.45 ? AppTheme.accent : AppTheme.textSecondary)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .frame(width: width, alignment: .leading)
+        .background(.black.opacity(0.86), in: RoundedRectangle(cornerRadius: corner, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: corner).stroke(AppTheme.accent.opacity(lerp(0.72, 0.95, emphasis)), lineWidth: 1.2))
+        .shadow(color: AppTheme.accent.opacity(glow), radius: lerp(14, 26, emphasis), y: 6)
+    }
+
     private var dashedHuntBox: some View {
         RoundedRectangle(cornerRadius: 10, style: .continuous)
             .strokeBorder(
                 style: StrokeStyle(lineWidth: 1.5, dash: [8, 6], dashPhase: CGFloat(elapsed * 28))
             )
             .foregroundStyle(AppTheme.accent.opacity(0.55))
-            .frame(width: 216, height: 96)
-            .offset(y: 24)
+            .frame(width: 156, height: 36)
+            .offset(y: 20)
     }
 
     private var scannerBeam: some View {
@@ -256,7 +357,6 @@ struct OnboardingDemoScreenView: View {
                 )
                 .frame(height: 28)
                 .blur(radius: 6)
-                .offset(y: beamOffset * 0.35)
             Rectangle()
                 .fill(
                     LinearGradient(
@@ -266,7 +366,6 @@ struct OnboardingDemoScreenView: View {
                     )
                 )
                 .frame(height: 2)
-                .offset(y: beamOffset * 0.35)
         }
     }
 
@@ -318,6 +417,36 @@ struct OnboardingDemoScreenView: View {
 
             viewfinderCorners(opacity: 0.2 + Double(phaseProgress) * 0.2)
         }
+    }
+
+    private var finalConversionCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(itemName)
+                    .font(.caption.bold())
+                    .foregroundStyle(.white.opacity(0.76))
+                Spacer()
+                Circle().fill(AppTheme.accent).frame(width: 8, height: 8)
+            }
+            Text(yen)
+                .font(.title2.bold())
+                .monospacedDigit()
+                .foregroundStyle(.white.opacity(0.92))
+            Divider().background(.white.opacity(0.14))
+            Text(ringgit)
+                .font(.system(size: 42, weight: .heavy))
+                .monospacedDigit()
+                .foregroundStyle(AppTheme.accent)
+                .shadow(color: AppTheme.accent.opacity(0.35), radius: 16, y: 2)
+            Text("JPY → MYR · overlay anchored to tag")
+                .font(.caption.bold())
+                .foregroundStyle(AppTheme.textSecondary)
+        }
+        .padding(16)
+        .frame(width: 286)
+        .background(.black.opacity(0.86), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 20).stroke(AppTheme.accent.opacity(0.85), lineWidth: 1.2))
+        .shadow(color: AppTheme.accent.opacity(0.3), radius: 22, y: 8)
     }
 
     // MARK: - Chrome
@@ -421,5 +550,14 @@ struct OnboardingDemoScreenView: View {
         guard edge1 > edge0 else { return value >= edge1 ? 1 : 0 }
         let x = min(max((value - edge0) / (edge1 - edge0), 0), 1)
         return CGFloat(x * x * (3 - 2 * x))
+    }
+
+    private func easeIn(_ value: Double) -> Double {
+        let x = min(max(value, 0), 1)
+        return x * x * x
+    }
+
+    private func lerp(_ from: CGFloat, _ to: CGFloat, _ progress: CGFloat) -> CGFloat {
+        from + (to - from) * min(max(progress, 0), 1)
     }
 }
