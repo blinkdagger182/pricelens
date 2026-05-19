@@ -77,8 +77,8 @@ struct iPhone3DHeroSceneView: UIViewRepresentable {
         private let laserRoot = SCNNode()
 
         private var rimLightNode: SCNNode?
-        private var laserCoreNode: SCNNode?
-        private var laserGlowNode: SCNNode?
+        private var laserBeamNodes: [SCNNode] = []
+        private var laserSparkNodes: [SCNNode] = []
         private var screenNode: SCNNode?
         private var isLoadingPhone = false
         private var displayLink: CADisplayLink?
@@ -190,7 +190,24 @@ struct iPhone3DHeroSceneView: UIViewRepresentable {
             stand.name = "bagIllustration"
             stand.eulerAngles = SCNVector3(0, 0, 0)
             stand.position = SCNVector3(0, 0.062, 0)
+            stand.renderingOrder = 10
             bagRoot.addChildNode(stand)
+
+            let tagPlane = SCNPlane(width: 0.034, height: 0.031)
+            let tagMaterial = SCNMaterial()
+            tagMaterial.lightingModel = .constant
+            tagMaterial.isDoubleSided = true
+            tagMaterial.diffuse.contents = Self.makeReadableTagTexture()
+            tagMaterial.emission.contents = tagMaterial.diffuse.contents
+            tagMaterial.emission.intensity = 0.45
+            tagPlane.materials = [tagMaterial]
+
+            let tag = SCNNode(geometry: tagPlane)
+            tag.name = "readablePriceTag"
+            tag.position = SCNVector3(0.014, 0.071, 0.003)
+            tag.eulerAngles = SCNVector3(0, 0, -0.04)
+            tag.renderingOrder = 120
+            bagRoot.addChildNode(tag)
 
             Task { @MainActor in
                 if let img = OnboardingBagPropTexture.make() {
@@ -201,28 +218,53 @@ struct iPhone3DHeroSceneView: UIViewRepresentable {
 
         private func buildLaserBeam() {
             laserRoot.childNodes.forEach { $0.removeFromParentNode() }
+            laserBeamNodes = []
+            laserSparkNodes = []
 
-            let coreMaterial = SCNMaterial()
-            coreMaterial.lightingModel = .constant
-            coreMaterial.diffuse.contents = UIColor(AppTheme.accent)
-            coreMaterial.emission.contents = UIColor(AppTheme.accent)
-            coreMaterial.emission.intensity = 1.2
+            func mat(alpha: CGFloat, intensity: CGFloat) -> SCNMaterial {
+                let m = SCNMaterial()
+                m.lightingModel = .constant
+                let color = UIColor(AppTheme.accent).withAlphaComponent(alpha)
+                m.diffuse.contents = color
+                m.emission.contents = color
+                m.emission.intensity = intensity
+                m.blendMode = .add
+                m.writesToDepthBuffer = false
+                m.readsFromDepthBuffer = false
+                m.isDoubleSided = true
+                return m
+            }
 
-            let glowMaterial = SCNMaterial()
-            glowMaterial.lightingModel = .constant
-            glowMaterial.diffuse.contents = UIColor(AppTheme.accent).withAlphaComponent(0.24)
-            glowMaterial.emission.contents = UIColor(AppTheme.accent).withAlphaComponent(0.45)
-            glowMaterial.emission.intensity = 0.9
-            glowMaterial.blendMode = .add
+            let beamSpecs: [(radius: CGFloat, alpha: CGFloat, intensity: CGFloat)] = [
+                (0.0015, 0.16, 0.65),
+                (0.0011, 0.34, 1.05),
+                (0.00075, 0.50, 1.35),
+                (0.00055, 0.70, 1.75),
+                (0.00038, 0.82, 2.0),
+            ]
 
-            let core = SCNNode(geometry: SCNCylinder(radius: 0.00055, height: 0.1))
-            core.geometry?.materials = [coreMaterial]
-            let glow = SCNNode(geometry: SCNCylinder(radius: 0.0022, height: 0.1))
-            glow.geometry?.materials = [glowMaterial]
-            laserRoot.addChildNode(glow)
-            laserRoot.addChildNode(core)
-            laserCoreNode = core
-            laserGlowNode = glow
+            for spec in beamSpecs {
+                let cylinder = SCNCylinder(radius: spec.radius, height: 0.1)
+                cylinder.radialSegmentCount = 12
+                cylinder.materials = [mat(alpha: spec.alpha, intensity: spec.intensity)]
+                let node = SCNNode(geometry: cylinder)
+                node.name = "PriceLensLaserBeam-\(spec.radius)"
+                node.renderingOrder = 80
+                laserRoot.addChildNode(node)
+                laserBeamNodes.append(node)
+            }
+
+            for index in 0..<7 {
+                let cylinder = SCNCylinder(radius: 0.00028, height: 0.018)
+                cylinder.radialSegmentCount = 8
+                cylinder.materials = [mat(alpha: 0.44, intensity: 1.45)]
+                let node = SCNNode(geometry: cylinder)
+                node.name = "PriceLensLaserSpark-\(index)"
+                node.renderingOrder = 80
+                laserRoot.addChildNode(node)
+                laserSparkNodes.append(node)
+            }
+
             laserRoot.opacity = 0
         }
 
@@ -298,35 +340,76 @@ struct iPhone3DHeroSceneView: UIViewRepresentable {
         }
 
         private func updateLaser(at t: TimeInterval, layout L: WorldLayout) {
-            let phase = OnboardingHeroStory.coarsePhase(at: t)
-            let (_, progress) = OnboardingHeroStory.phase(at: t)
-            let show = phase == .framing ? CGFloat(1 - min(max(progress, 0), 1) * 0.22) : 0
-            let flicker = CGFloat(0.72 + 0.28 * max(0, sin(t * 22)) + 0.1 * sin(t * 53))
-            laserRoot.opacity = max(0, min(1, show * flicker))
+            let (phase, progress) = OnboardingHeroStory.phase(at: t)
+            let isSceneOne = phase == .framing && progress < 0.76
+            let flicker = CGFloat(0.52 + 0.22 * max(0, sin(t * 28)) + 0.12 * max(0, sin(t * 71)))
+            laserRoot.opacity = isSceneOne ? max(0.22, min(0.78, flicker)) : 0
 
             let start = SCNVector3(
-                L.phonePosition.x + 0.035,
-                L.phonePosition.y + 0.03,
-                L.phonePosition.z + 0.026
+                L.phonePosition.x + 0.025,
+                L.phonePosition.y + 0.043,
+                L.phonePosition.z + 0.02
             )
-            let end = SCNVector3(
-                L.bagPosition.x + 0.022,
-                L.bagPosition.y + 0.075,
-                L.bagPosition.z + 0.004
+            let targetCenter = SCNVector3(
+                L.bagPosition.x + 0.047,
+                L.bagPosition.y + 0.074,
+                L.bagPosition.z + 0.008
             )
-            positionLaser(laserCoreNode, from: start, to: end)
-            positionLaser(laserGlowNode, from: start, to: end)
+            let targetOffsets: [SCNVector3] = [
+                SCNVector3(-0.011, 0.012, 0),
+                SCNVector3(-0.006, 0.004, 0),
+                SCNVector3(0, 0, 0),
+                SCNVector3(0.006, -0.004, 0),
+                SCNVector3(0.012, -0.010, 0),
+            ]
+            for (index, node) in laserBeamNodes.enumerated() {
+                let offset = targetOffsets[min(index, targetOffsets.count - 1)]
+                let end = SCNVector3(targetCenter.x + offset.x, targetCenter.y + offset.y, targetCenter.z + offset.z)
+                positionLaserCylinder(node, from: start, to: end)
+            }
+            for (index, node) in laserSparkNodes.enumerated() {
+                let lane = Float(index - 3) * 0.0024
+                let pulse = Float((sin(t * Double(4 + index) + Double(index)) + 1) * 0.5)
+                let progress = Float((Double(index) * 0.117 + t * 0.18).truncatingRemainder(dividingBy: 1))
+                updateLaserSpark(node, from: start, to: targetCenter, lateral: lane, progress: progress)
+                node.opacity = CGFloat(0.08 + 0.42 * pulse)
+            }
         }
 
-        private func positionLaser(_ node: SCNNode?, from start: SCNVector3, to end: SCNVector3) {
+        private func positionLaserCylinder(_ node: SCNNode?, from start: SCNVector3, to end: SCNVector3) {
             guard let node, let cylinder = node.geometry as? SCNCylinder else { return }
             let dx = end.x - start.x
             let dy = end.y - start.y
             let dz = end.z - start.z
-            let length = sqrt(dx * dx + dy * dy + dz * dz)
+            let length = max(sqrt(dx * dx + dy * dy + dz * dz), 0.0001)
             cylinder.height = CGFloat(length)
             node.position = SCNVector3((start.x + end.x) * 0.5, (start.y + end.y) * 0.5, (start.z + end.z) * 0.5)
             node.look(at: end, up: SCNVector3(0, 1, 0), localFront: SCNVector3(0, 1, 0))
+        }
+
+        private func updateLaserSpark(_ node: SCNNode?, from start: SCNVector3, to end: SCNVector3, lateral: Float, progress: Float) {
+            guard let node, let cylinder = node.geometry as? SCNCylinder else { return }
+            let dx = end.x - start.x
+            let dy = end.y - start.y
+            let dz = end.z - start.z
+            let length = max(sqrt(dx * dx + dy * dy + dz * dz), 0.0001)
+            let nx = -dy / length
+            let ny = dx / length
+            let p = max(0.08, min(0.92, progress))
+            let segmentLength: Float = 0.024
+            let center = SCNVector3(
+                start.x + dx * p + nx * lateral,
+                start.y + dy * p + ny * lateral,
+                start.z + dz * p
+            )
+            let half = segmentLength * 0.5
+            let ux = dx / length
+            let uy = dy / length
+            let uz = dz / length
+            let b = SCNVector3(center.x + ux * half, center.y + uy * half, center.z + uz * half)
+            cylinder.height = CGFloat(segmentLength)
+            node.position = center
+            node.look(at: b, up: SCNVector3(0, 1, 0), localFront: SCNVector3(0, 1, 0))
         }
 
         private func pulseRimLight(elapsed: CFTimeInterval) {
@@ -355,6 +438,7 @@ struct iPhone3DHeroSceneView: UIViewRepresentable {
             let loaded = SCNScene(gltfAsset: asset)
             let root = loaded.rootNode.clone()
             Self.centerAndScalePhoneRoot(root)
+            Self.setRenderingOrder(120, for: root)
             modelContainer.childNodes.forEach { $0.removeFromParentNode() }
             modelContainer.addChildNode(root)
             let projectedScreen = Self.makeProjectedScreenNode()
@@ -414,7 +498,7 @@ struct iPhone3DHeroSceneView: UIViewRepresentable {
             let node = SCNNode(geometry: display)
             node.name = "PriceLensProjectedDisplay"
             node.position = SCNVector3(0, 0, 0.0105)
-            node.renderingOrder = 100
+            node.renderingOrder = 130
             return node
         }
 
@@ -455,6 +539,58 @@ struct iPhone3DHeroSceneView: UIViewRepresentable {
             m.transparency = 1
             m.transparencyMode = .default
             m.blendMode = .alpha
+        }
+
+        private static func setRenderingOrder(_ order: Int, for node: SCNNode) {
+            node.renderingOrder = order
+            node.childNodes.forEach { setRenderingOrder(order, for: $0) }
+        }
+
+        private static func makeReadableTagTexture() -> UIImage {
+            let size = CGSize(width: 260, height: 210)
+            let renderer = UIGraphicsImageRenderer(size: size)
+            return renderer.image { context in
+                let rect = CGRect(origin: .zero, size: size)
+                UIColor.clear.setFill()
+                context.fill(rect)
+
+                let card = UIBezierPath(roundedRect: rect.insetBy(dx: 4, dy: 4), cornerRadius: 20)
+                UIColor(hex: "#FFF8EA").setFill()
+                card.fill()
+                UIColor(white: 0, alpha: 0.18).setStroke()
+                card.lineWidth = 2
+                card.stroke()
+
+                let title = NSMutableAttributedString(
+                    string: "LEATHER",
+                    attributes: [
+                        .font: UIFont.systemFont(ofSize: 26, weight: .heavy),
+                        .foregroundColor: UIColor(white: 0.42, alpha: 1),
+                        .kern: 5.0,
+                    ]
+                )
+                title.draw(in: CGRect(x: 0, y: 48, width: size.width, height: 34).insetBy(dx: 24, dy: 0))
+
+                let price = NSAttributedString(
+                    string: "¥12,800",
+                    attributes: [
+                        .font: UIFont.monospacedDigitSystemFont(ofSize: 44, weight: .black),
+                        .foregroundColor: UIColor(white: 0.06, alpha: 1),
+                    ]
+                )
+                let priceSize = price.size()
+                price.draw(at: CGPoint(x: (size.width - priceSize.width) * 0.5, y: 88))
+
+                let note = NSAttributedString(
+                    string: "tax incl.",
+                    attributes: [
+                        .font: UIFont.systemFont(ofSize: 20, weight: .medium),
+                        .foregroundColor: UIColor(white: 0.48, alpha: 1),
+                    ]
+                )
+                let noteSize = note.size()
+                note.draw(at: CGPoint(x: (size.width - noteSize.width) * 0.5, y: 144))
+            }
         }
 
         private static func centerAndScalePhoneRoot(_ root: SCNNode) {

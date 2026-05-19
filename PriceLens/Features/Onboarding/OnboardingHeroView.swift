@@ -10,17 +10,19 @@ struct OnboardingHeroView: View {
             let phase = OnboardingHeroStory.coarsePhase(at: elapsed)
             let u = OnboardingHeroStory.normalizedTime(elapsed)
             let (_, progress) = OnboardingHeroStory.phase(at: elapsed)
-            let cardProgress = phase == .reveal ? smoothstep(0.0, 0.55, progress) : 0
+
+            let cardT: CGFloat = phase == .reveal ? easeIn(0.0, 0.44, progress) : 0
+            let phoneAlpha: Double = phase == .reveal ? Double(1 - smoothstep(0.34, 0.50, progress)) : 1
 
             VStack(spacing: 10) {
                 ZStack {
                     ambientGlow
                     iPhone3DHeroSceneView()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .opacity(phase == .reveal ? Double(1 - cardProgress) : 1)
-                    standaloneConversionCard(progress: cardProgress)
-                        .opacity(Double(cardProgress))
-                        .scaleEffect(0.88 + 0.12 * cardProgress)
+                        .opacity(phoneAlpha)
+                    standaloneConversionCard()
+                        .opacity(phase == .reveal ? 1 : 0)
+                        .scaleEffect(lerp(0.52, 1.0, cardT), anchor: .center)
                 }
                 .frame(height: 372)
 
@@ -84,44 +86,23 @@ struct OnboardingHeroView: View {
         }
     }
 
-    private func standaloneConversionCard(progress: CGFloat) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("Travel Adapter")
-                    .font(.headline.bold())
-                    .foregroundStyle(.white.opacity(0.82))
-                Spacer()
-                Circle()
-                    .fill(AppTheme.accent)
-                    .frame(width: 10, height: 10)
-                    .shadow(color: AppTheme.accent.opacity(0.7), radius: 12)
-            }
-            Text("¥12,800")
-                .font(.title2.bold())
-                .monospacedDigit()
-                .foregroundStyle(.white)
-            Divider().background(.white.opacity(0.18))
-            Text("RM 398.40")
-                .font(.system(size: 54, weight: .heavy))
-                .monospacedDigit()
-                .minimumScaleFactor(0.75)
-                .foregroundStyle(AppTheme.accent)
-                .shadow(color: AppTheme.accent.opacity(0.55), radius: 26, y: 4)
-            Text("JPY → MYR · converted in place")
-                .font(.subheadline.bold())
-                .foregroundStyle(AppTheme.textSecondary)
-        }
-        .padding(24)
-        .frame(width: 326, alignment: .leading)
-        .background(.black.opacity(0.88), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 24).stroke(AppTheme.accent.opacity(0.95), lineWidth: 1.4))
-        .shadow(color: AppTheme.accent.opacity(0.38), radius: 30, y: 10)
-        .offset(y: -8 + (1 - progress) * 18)
+    private func standaloneConversionCard() -> some View {
+        OnboardingConversionCard(scale: 1.18, emphasis: 1)
     }
 
     private func smoothstep(_ edge0: Double, _ edge1: Double, _ value: Double) -> CGFloat {
         guard edge1 > edge0 else { return value >= edge1 ? 1 : 0 }
         let x = min(max((value - edge0) / (edge1 - edge0), 0), 1)
         return CGFloat(x * x * (3 - 2 * x))
+    }
+
+    private func easeIn(_ edge0: Double, _ edge1: Double, _ value: Double) -> CGFloat {
+        guard edge1 > edge0 else { return value >= edge1 ? 1 : 0 }
+        let x = min(max((value - edge0) / (edge1 - edge0), 0), 1)
+        return CGFloat(x * x * x)
+    }
+
+    private func lerp(_ from: CGFloat, _ to: CGFloat, _ t: CGFloat) -> CGFloat {
+        from + (to - from) * min(max(t, 0), 1)
     }
 }

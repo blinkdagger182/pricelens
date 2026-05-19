@@ -66,39 +66,12 @@ struct OnboardingBagPropArt: View {
             }
             .offset(y: 14)
 
-            // Hang tag
-            ZStack {
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(
-                        LinearGradient(colors: [Color(hex: "#D4B48C"), Color(hex: "#A98658")], startPoint: .leading, endPoint: .trailing)
-                    )
-                    .frame(width: 5, height: 36)
-                    .offset(y: -86)
-
-                ZStack {
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(Color(hex: "#F5EBE0"))
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .strokeBorder(Color.black.opacity(0.12), lineWidth: 1)
-                    VStack(spacing: 2) {
-                        Text("LEATHER")
-                            .font(.system(size: 8, weight: .heavy))
-                            .foregroundStyle(.black.opacity(0.42))
-                            .tracking(1)
-                        Text("¥12,800")
-                            .font(.system(size: 17, weight: .bold).monospacedDigit())
-                            .foregroundStyle(.black.opacity(0.92))
-                        Text("tax incl.")
-                            .font(.system(size: 7, weight: .medium))
-                            .foregroundStyle(.black.opacity(0.35))
-                    }
-                    .padding(.vertical, 4)
-                }
-                .frame(width: 92, height: 98)
-                .offset(x: 58, y: -18)
-                .rotationEffect(.degrees(-7))
-                .shadow(color: .black.opacity(0.45), radius: 10, y: 5)
-            }
+            RoundedRectangle(cornerRadius: 2)
+                .fill(
+                    LinearGradient(colors: [Color(hex: "#D4B48C"), Color(hex: "#A98658")], startPoint: .leading, endPoint: .trailing)
+                )
+                .frame(width: 5, height: 36)
+                .offset(x: 58, y: -72)
         }
         .frame(width: 320, height: 400)
     }

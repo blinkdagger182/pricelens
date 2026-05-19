@@ -82,7 +82,6 @@ struct OnboardingDemoScreenView: View {
             tagCard
                 .scaleEffect(1.55)
                 .offset(x: 0, y: -4)
-                .opacity(Double(prep))
 
             viewfinderCorners(opacity: 0.35 + phaseProgress * 0.25)
         }
@@ -177,8 +176,13 @@ struct OnboardingDemoScreenView: View {
 
     private func scanRevealFeed(reveal: CGFloat) -> some View {
         let easedReveal = easeIn(Double(reveal))
-        let scanOut = 1 - smoothstep(0.78, 1.0, easedReveal)
+        let revealHandoff = phase == .reveal ? smoothstep(0.0, 0.08, phaseProgress) : 0
+        let scanComplete = phase == .scanning ? smoothstep(0.62, 0.82, phaseProgress) : 1
+        let scanOut = (1 - smoothstep(0.78, 1.0, easedReveal)) * (1 - scanComplete)
         let darken = 0.54 * CGFloat(easedReveal)
+        let scanRounds = min(phaseProgress / 0.62, 1) * 1.5
+        let scanWave = 0.5 - 0.5 * cos(scanRounds * .pi * 2)
+        let scanLineY = lerp(-10, 22, CGFloat(scanWave))
 
         return ZStack {
             leatherBackdrop
@@ -190,9 +194,8 @@ struct OnboardingDemoScreenView: View {
 
             Color.black.opacity(darken)
 
-            scannerBeam
-                .offset(y: 20)
-                .opacity(Double(scanOut))
+            priceScanLine(y: scanLineY)
+                .opacity(Double(phase == .scanning ? 1 - scanComplete : 0))
             dashedHuntBox
                 .opacity(Double(scanOut))
             ScannerCorners(color: .white, lineWidth: 3.4)
@@ -202,10 +205,34 @@ struct OnboardingDemoScreenView: View {
 
             emphasizedConversionCard(reveal: CGFloat(easedReveal))
                 .offset(y: lerp(150, 124, CGFloat(easedReveal)))
+                .scaleEffect(lerp(0.92, 1, scanComplete), anchor: .top)
+                .opacity(Double(scanComplete * (1 - revealHandoff)))
 
             viewfinderCorners(opacity: Double(0.55 * scanOut + 0.22 * CGFloat(easedReveal)))
             liveBadge.opacity(Double(scanOut))
         }
+    }
+
+    private func priceScanLine(y: CGFloat) -> some View {
+        ZStack {
+            Rectangle()
+                .fill(
+                    LinearGradient(
+                        colors: [.clear, AppTheme.accent.opacity(0.65), .white.opacity(0.86), AppTheme.accent.opacity(0.65), .clear],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .frame(width: 190, height: 2.5)
+                .blur(radius: 0.4)
+            Rectangle()
+                .fill(AppTheme.accent.opacity(0.18))
+                .frame(width: 190, height: 18)
+                .blur(radius: 8)
+        }
+        .offset(y: y)
+        .shadow(color: AppTheme.accent.opacity(0.65), radius: 9)
+        .allowsHitTesting(false)
     }
 
     private var scanningFeed: some View {
@@ -286,51 +313,8 @@ struct OnboardingDemoScreenView: View {
     }
 
     private func emphasizedConversionCard(reveal: CGFloat) -> some View {
-        let width: CGFloat = 286
-        let corner: CGFloat = 18
-        let amountSize: CGFloat = 34
         let emphasis = smoothstep(0.24, 0.82, Double(reveal))
-        let glow = lerp(0.28, 0.62, emphasis)
-
-        return VStack(alignment: .leading, spacing: 7) {
-            HStack {
-                Text(itemName)
-                    .font(.caption.bold())
-                    .foregroundStyle(.white.opacity(0.8))
-                Spacer()
-                Circle()
-                    .fill(AppTheme.accent)
-                    .frame(width: 8, height: 8)
-                    .shadow(color: AppTheme.accent.opacity(glow), radius: 8)
-            }
-            Text(yen)
-                .font(.system(size: 23, weight: .bold))
-                .monospacedDigit()
-                .foregroundStyle(.white.opacity(0.92))
-            Divider()
-                .background(.white.opacity(0.14))
-                .scaleEffect(x: lerp(0.78, 1, emphasis), anchor: .leading)
-            Text(ringgit)
-                .font(.system(size: amountSize, weight: .heavy))
-                .monospacedDigit()
-                .foregroundStyle(AppTheme.accent)
-                .shadow(color: AppTheme.accent.opacity(glow), radius: lerp(12, 24, emphasis), y: 2)
-                .overlay(alignment: .bottom) {
-                    Rectangle()
-                        .fill(AppTheme.accent.opacity(0.18 * emphasis))
-                        .frame(height: 8)
-                        .offset(y: -4)
-                }
-            Text(reveal < 0.45 ? "Detected price · JPY → MYR" : "JPY → MYR · converted in place")
-                .font(.caption.bold())
-                .foregroundStyle(reveal < 0.45 ? AppTheme.accent : AppTheme.textSecondary)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
-        .frame(width: width, alignment: .leading)
-        .background(.black.opacity(0.86), in: RoundedRectangle(cornerRadius: corner, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: corner).stroke(AppTheme.accent.opacity(lerp(0.72, 0.95, emphasis)), lineWidth: 1.2))
-        .shadow(color: AppTheme.accent.opacity(glow), radius: lerp(14, 26, emphasis), y: 6)
+        return OnboardingConversionCard(scale: 1, emphasis: emphasis)
     }
 
     private var dashedHuntBox: some View {

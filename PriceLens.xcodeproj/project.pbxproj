@@ -14,6 +14,7 @@
 		148D06F6D9745C71A3B572A9 /* OverlayStabilizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6050F01223D1106663C9207E /* OverlayStabilizer.swift */; };
 		1506919165C2B6B5864E509D /* String+PriceParsing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6092811BEF31D6926DED483E /* String+PriceParsing.swift */; };
 		15A20420D1A7F37682098FE4 /* OnboardingDemoScreenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E73D20532BA32EF5632CE9F3 /* OnboardingDemoScreenView.swift */; };
+		17C527715E673A8A0AE83661 /* OnboardingConversionCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C87E83F4ED03E8192FBAF42 /* OnboardingConversionCard.swift */; };
 		184C784E380914502D08A4B8 /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7CA8516FB6D1CED72CD8641 /* AppTheme.swift */; };
 		1B81A91D22165CEE5A3C9751 /* CameraPermissionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 742BB1E46D172DEFDF1C3080 /* CameraPermissionService.swift */; };
 		1CE8351E309AC42354DB6CB1 /* OnboardingScreenTexture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D2B99E138BAF381FF72FE8D /* OnboardingScreenTexture.swift */; };
@@ -139,6 +140,7 @@
 		E1828480853120E5C573F38E /* HomeCurrencySelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeCurrencySelectionView.swift; sourceTree = "<group>"; };
 		E267C44A4A398A87F534BB5F /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
 		E73D20532BA32EF5632CE9F3 /* OnboardingDemoScreenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingDemoScreenView.swift; sourceTree = "<group>"; };
+		4C87E83F4ED03E8192FBAF42 /* OnboardingConversionCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingConversionCard.swift; sourceTree = "<group>"; };
 		EBC153E03434EB80B6BFE2BC /* PriceOverlayItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PriceOverlayItem.swift; sourceTree = "<group>"; };
 		EF419D485A90936C57E1BDB4 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		F5F4DAB24B9E7D57869B897E /* ConversionEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversionEngine.swift; sourceTree = "<group>"; };
@@ -235,6 +237,7 @@
 				E1828480853120E5C573F38E /* HomeCurrencySelectionView.swift */,
 				387D40C3560E13AA2CEC2B76 /* iPhone3DHeroSceneView.swift */,
 				8EE99FD611514B70878EFD5E /* OnboardingBagPropArt.swift */,
+				4C87E83F4ED03E8192FBAF42 /* OnboardingConversionCard.swift */,
 				E73D20532BA32EF5632CE9F3 /* OnboardingDemoScreenView.swift */,
 				E0CF31E9170A5083A9102138 /* OnboardingHeroTiming.swift */,
 				FF0935E16EB33733CA3D6F21 /* OnboardingHeroView.swift */,
@@ -498,6 +501,7 @@
 				9FDBB0B8D332BB85C70812EF /* ManualConverterViewModel.swift in Sources */,
 				EF467938FA44685712D3FFF8 /* OCRSnapshotService.swift in Sources */,
 				27602695509E06B42B022C8F /* OnboardingBagPropArt.swift in Sources */,
+				17C527715E673A8A0AE83661 /* OnboardingConversionCard.swift in Sources */,
 				15A20420D1A7F37682098FE4 /* OnboardingDemoScreenView.swift in Sources */,
 				AE44A20289D2754C34EF29BE /* OnboardingHeroTiming.swift in Sources */,
 				9A6718C5B27D33A810FA94AC /* OnboardingHeroView.swift in Sources */,

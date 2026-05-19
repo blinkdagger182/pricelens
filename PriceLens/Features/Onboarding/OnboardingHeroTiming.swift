@@ -8,7 +8,7 @@ enum OnboardingHeroStoryPhase: Int, CaseIterable {
 }
 
 enum OnboardingHeroStory {
-    static let cycleDuration: TimeInterval = 12.8
+    static let cycleDuration: TimeInterval = 18.0
 
     fileprivate static let tEstablish: TimeInterval = 4.0
     fileprivate static let tStartScan: TimeInterval = 5.2
