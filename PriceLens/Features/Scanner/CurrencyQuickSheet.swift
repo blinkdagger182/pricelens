@@ -35,87 +35,85 @@ struct CurrencyAnchoredPanel: View {
     }
 
     var body: some View {
-        ZStack(alignment: role == .home ? .topLeading : .topTrailing) {
-            Triangle()
-                .fill(.black.opacity(0.90))
-                .frame(width: 22, height: 12)
-                .overlay(Triangle().stroke(AppTheme.accent.opacity(0.42), lineWidth: 1))
-                .offset(x: role == .home ? 26 : -26, y: 0)
-                .zIndex(2)
-
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(role.title)
-                            .font(.caption.bold())
-                            .foregroundStyle(AppTheme.textSecondary)
-                        Text(selectedCode)
-                            .font(.title3.bold())
-                            .foregroundStyle(.white)
-                    }
-                    Spacer()
-                    Button(action: dismiss) {
-                        Image(systemName: "xmark")
-                            .font(.caption.bold())
-                            .foregroundStyle(AppTheme.textSecondary)
-                            .frame(width: 30, height: 30)
-                            .background(AppTheme.surfaceSecondary, in: Circle())
-                    }
-                    .buttonStyle(.plain)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(role.title)
+                        .font(.caption.bold())
+                        .foregroundStyle(AppTheme.textSecondary)
+                    Text(selectedCode)
+                        .font(.title3.bold())
+                        .foregroundStyle(.white)
                 }
-
-                VStack(spacing: 8) {
-                    ForEach(favorites) { currency in
-                        Button {
-                            select(currency.code)
-                        } label: {
-                            HStack(spacing: 10) {
-                                CurrencyFlagView(currency: currency)
-                                Text(currency.code)
-                                    .font(.headline)
-                                    .foregroundStyle(.white)
-                                Text(currency.name)
-                                    .font(.caption)
-                                    .foregroundStyle(AppTheme.textSecondary)
-                                    .lineLimit(1)
-                                Spacer()
-                                if currency.code == selectedCode {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .foregroundStyle(AppTheme.accent)
-                                }
-                            }
-                            .padding(.horizontal, 10)
-                            .frame(height: 38)
-                            .background(AppTheme.surfaceSecondary, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-
-                Button {
-                    showAllCurrencies()
-                } label: {
-                    HStack {
-                        Image(systemName: "magnifyingglass")
-                        Text("All currencies")
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                    }
-                    .font(.subheadline.bold())
-                    .foregroundStyle(AppTheme.accent)
-                    .padding(.horizontal, 12)
-                    .frame(height: 42)
-                    .background(AppTheme.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                Spacer()
+                Button(action: dismiss) {
+                    Image(systemName: "xmark")
+                        .font(.caption.bold())
+                        .foregroundStyle(AppTheme.textSecondary)
+                        .frame(width: 30, height: 30)
+                        .background(AppTheme.surfaceSecondary, in: Circle())
                 }
                 .buttonStyle(.plain)
             }
-            .padding(14)
-            .frame(width: 286)
-            .background(.black.opacity(0.90), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(AppTheme.accent.opacity(0.45), lineWidth: 1))
-            .shadow(color: AppTheme.accent.opacity(0.16), radius: 18, y: 8)
-            .padding(.top, 10)
+
+            VStack(spacing: 8) {
+                ForEach(favorites) { currency in
+                    Button {
+                        select(currency.code)
+                    } label: {
+                        HStack(spacing: 10) {
+                            CurrencyFlagView(currency: currency)
+                            Text(currency.code)
+                                .font(.headline)
+                                .foregroundStyle(.white)
+                            Text(currency.name)
+                                .font(.caption)
+                                .foregroundStyle(AppTheme.textSecondary)
+                                .lineLimit(1)
+                            Spacer()
+                            if currency.code == selectedCode {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundStyle(AppTheme.accent)
+                            }
+                        }
+                        .padding(.horizontal, 10)
+                        .frame(height: 38)
+                        .background(AppTheme.surfaceSecondary, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+
+            Button {
+                showAllCurrencies()
+            } label: {
+                HStack {
+                    Image(systemName: "magnifyingglass")
+                    Text("All currencies")
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                }
+                .font(.subheadline.bold())
+                .foregroundStyle(AppTheme.accent)
+                .padding(.horizontal, 12)
+                .frame(height: 42)
+                .background(AppTheme.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            }
+            .buttonStyle(.plain)
         }
+        .padding(.top, 26)
+        .padding(.horizontal, 14)
+        .padding(.bottom, 14)
+        .frame(width: 286)
+        .background(
+            CurrencyPopoverShape(arrowX: role == .home ? 38 : 248)
+                .fill(.black.opacity(0.92))
+        )
+        .overlay(
+            CurrencyPopoverShape(arrowX: role == .home ? 38 : 248)
+                .stroke(AppTheme.accent.opacity(0.52), lineWidth: 1.2)
+        )
+        .shadow(color: AppTheme.accent.opacity(0.18), radius: 20, y: 10)
     }
 
     private func select(_ code: String) {
@@ -129,12 +127,29 @@ struct CurrencyAnchoredPanel: View {
     }
 }
 
-private struct Triangle: Shape {
+private struct CurrencyPopoverShape: Shape {
+    let arrowX: CGFloat
+
     func path(in rect: CGRect) -> Path {
+        let arrowHeight: CGFloat = 12
+        let arrowHalfWidth: CGFloat = 15
+        let radius: CGFloat = 18
+        let top = rect.minY + arrowHeight
+        let tipX = min(max(rect.minX + radius + arrowHalfWidth, arrowX), rect.maxX - radius - arrowHalfWidth)
+
         var path = Path()
-        path.move(to: CGPoint(x: rect.midX, y: rect.minY))
-        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
-        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+        path.move(to: CGPoint(x: rect.minX + radius, y: top))
+        path.addLine(to: CGPoint(x: tipX - arrowHalfWidth, y: top))
+        path.addLine(to: CGPoint(x: tipX, y: rect.minY))
+        path.addLine(to: CGPoint(x: tipX + arrowHalfWidth, y: top))
+        path.addLine(to: CGPoint(x: rect.maxX - radius, y: top))
+        path.addQuadCurve(to: CGPoint(x: rect.maxX, y: top + radius), control: CGPoint(x: rect.maxX, y: top))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY - radius))
+        path.addQuadCurve(to: CGPoint(x: rect.maxX - radius, y: rect.maxY), control: CGPoint(x: rect.maxX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.minX + radius, y: rect.maxY))
+        path.addQuadCurve(to: CGPoint(x: rect.minX, y: rect.maxY - radius), control: CGPoint(x: rect.minX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.minX, y: top + radius))
+        path.addQuadCurve(to: CGPoint(x: rect.minX + radius, y: top), control: CGPoint(x: rect.minX, y: top))
         path.closeSubpath()
         return path
     }

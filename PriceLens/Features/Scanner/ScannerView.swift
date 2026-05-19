@@ -59,7 +59,7 @@ struct ScannerView: View {
                 PriceOverlayLayer(items: viewModel.overlays, onTap: viewModel.tap)
                 topBar
                 if let selectedCurrencyRole {
-                    Color.black.opacity(0.42)
+                    Color.black.opacity(0.68)
                         .ignoresSafeArea()
                         .contentShape(Rectangle())
                         .onTapGesture {
