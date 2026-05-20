@@ -237,9 +237,13 @@ struct iPhone3DHeroSceneView: UIViewRepresentable {
 
             let beamSpecs: [(radius: CGFloat, alpha: CGFloat, intensity: CGFloat)] = [
                 (0.0015, 0.16, 0.65),
+                (0.00125, 0.22, 0.82),
                 (0.0011, 0.34, 1.05),
+                (0.00092, 0.42, 1.20),
                 (0.00075, 0.50, 1.35),
+                (0.00064, 0.58, 1.52),
                 (0.00055, 0.70, 1.75),
+                (0.00046, 0.76, 1.88),
                 (0.00038, 0.82, 2.0),
             ]
 
@@ -356,24 +360,45 @@ struct iPhone3DHeroSceneView: UIViewRepresentable {
                 L.bagPosition.z + 0.008
             )
             let targetOffsets: [SCNVector3] = [
-                SCNVector3(-0.011, 0.012, 0),
-                SCNVector3(-0.006, 0.004, 0),
+                SCNVector3(-0.006, 0.008, 0),
+                SCNVector3(-0.0045, 0.005, 0),
+                SCNVector3(-0.003, 0.0025, 0),
+                SCNVector3(-0.0015, 0.001, 0),
                 SCNVector3(0, 0, 0),
-                SCNVector3(0.006, -0.004, 0),
-                SCNVector3(0.012, -0.010, 0),
+                SCNVector3(0.0015, -0.001, 0),
+                SCNVector3(0.003, -0.0025, 0),
+                SCNVector3(0.0045, -0.005, 0),
+                SCNVector3(0.006, -0.008, 0),
             ]
             for (index, node) in laserBeamNodes.enumerated() {
                 let offset = targetOffsets[min(index, targetOffsets.count - 1)]
                 let end = SCNVector3(targetCenter.x + offset.x, targetCenter.y + offset.y, targetCenter.z + offset.z)
-                positionLaserCylinder(node, from: start, to: end)
+                let trimmed = trimmedLaserSegment(from: start, to: end, startTrim: 0.018, endTrim: 0.105)
+                positionLaserCylinder(node, from: trimmed.start, to: trimmed.end)
             }
             for (index, node) in laserSparkNodes.enumerated() {
                 let lane = Float(index - 3) * 0.0024
                 let pulse = Float((sin(t * Double(4 + index) + Double(index)) + 1) * 0.5)
                 let progress = Float((Double(index) * 0.117 + t * 0.18).truncatingRemainder(dividingBy: 1))
-                updateLaserSpark(node, from: start, to: targetCenter, lateral: lane, progress: progress)
+                let trimmed = trimmedLaserSegment(from: start, to: targetCenter, startTrim: 0.018, endTrim: 0.105)
+                updateLaserSpark(node, from: trimmed.start, to: trimmed.end, lateral: lane, progress: progress)
                 node.opacity = CGFloat(0.08 + 0.42 * pulse)
             }
+        }
+
+        private func trimmedLaserSegment(
+            from start: SCNVector3,
+            to end: SCNVector3,
+            startTrim: Float,
+            endTrim: Float
+        ) -> (start: SCNVector3, end: SCNVector3) {
+            let dx = end.x - start.x
+            let dy = end.y - start.y
+            let dz = end.z - start.z
+            return (
+                SCNVector3(start.x + dx * startTrim, start.y + dy * startTrim, start.z + dz * startTrim),
+                SCNVector3(end.x - dx * endTrim, end.y - dy * endTrim, end.z - dz * endTrim)
+            )
         }
 
         private func positionLaserCylinder(_ node: SCNNode?, from start: SCNVector3, to end: SCNVector3) {

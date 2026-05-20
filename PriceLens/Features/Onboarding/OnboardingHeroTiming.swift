@@ -49,10 +49,23 @@ enum OnboardingHeroStory {
         return (0, toReveal)
     }
 
+    static func conversionCardHandoff(at elapsed: TimeInterval) -> (visibility: Double, expansion: Double) {
+        let u = normalizedTime(elapsed)
+        let visibility = smoothstep(tStartReveal - 0.32, tStartReveal - 0.12, u)
+        let expansion = smoothstep(tStartReveal - 0.10, tStartReveal + 0.46, u)
+        return (visibility, expansion)
+    }
+
     fileprivate static func easeIn(_ e0: TimeInterval, _ e1: TimeInterval, _ x: TimeInterval) -> Double {
         guard e1 > e0 else { return x >= e1 ? 1 : 0 }
         let t = Double((x - e0) / (e1 - e0)).clamped(to: 0...1)
         return t * t * t
+    }
+
+    fileprivate static func smoothstep(_ e0: TimeInterval, _ e1: TimeInterval, _ x: TimeInterval) -> Double {
+        guard e1 > e0 else { return x >= e1 ? 1 : 0 }
+        let t = Double((x - e0) / (e1 - e0)).clamped(to: 0...1)
+        return t * t * (3 - 2 * t)
     }
 }
 

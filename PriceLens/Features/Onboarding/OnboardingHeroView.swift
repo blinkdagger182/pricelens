@@ -10,8 +10,9 @@ struct OnboardingHeroView: View {
             let phase = OnboardingHeroStory.coarsePhase(at: elapsed)
             let u = OnboardingHeroStory.normalizedTime(elapsed)
             let (_, progress) = OnboardingHeroStory.phase(at: elapsed)
+            let handoff = OnboardingHeroStory.conversionCardHandoff(at: elapsed)
 
-            let cardT: CGFloat = phase == .reveal ? easeIn(0.0, 0.44, progress) : 0
+            let cardT: CGFloat = CGFloat(handoff.expansion)
             let phoneAlpha: Double = phase == .reveal ? Double(1 - smoothstep(0.34, 0.50, progress)) : 1
 
             VStack(spacing: 10) {
@@ -21,8 +22,8 @@ struct OnboardingHeroView: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .opacity(phoneAlpha)
                     standaloneConversionCard()
-                        .opacity(phase == .reveal ? 1 : 0)
-                        .scaleEffect(lerp(0.52, 1.0, cardT), anchor: .center)
+                        .opacity(handoff.visibility)
+                        .scaleEffect(lerp(0.68, 1.0, cardT), anchor: .center)
                 }
                 .frame(height: 372)
 

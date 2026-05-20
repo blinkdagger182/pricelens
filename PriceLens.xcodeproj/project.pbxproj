@@ -98,6 +98,7 @@
 		3E1A058D2449BAD44AB54917 /* PrimaryButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrimaryButton.swift; sourceTree = "<group>"; };
 		41A2F4D8059B1605520290B1 /* AppStorageKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStorageKeys.swift; sourceTree = "<group>"; };
 		4BC18CF2F43969E5230A3F69 /* Color+Hex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Hex.swift"; sourceTree = "<group>"; };
+		4C87E83F4ED03E8192FBAF42 /* OnboardingConversionCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingConversionCard.swift; sourceTree = "<group>"; };
 		53816D808C5CC85046B5A743 /* DataScannerRepresentable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataScannerRepresentable.swift; sourceTree = "<group>"; };
 		5439223B158F58E4A119A49B /* ScanResultDetailSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanResultDetailSheet.swift; sourceTree = "<group>"; };
 		5C264E4D8C420C8CC6B4D79B /* HapticsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticsService.swift; sourceTree = "<group>"; };
@@ -109,7 +110,7 @@
 		709C0F9E8D618ACEF71EF1FB /* DetectedPrice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetectedPrice.swift; sourceTree = "<group>"; };
 		7192D23F9054BDBC419D1385 /* ManualConverterViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualConverterViewModel.swift; sourceTree = "<group>"; };
 		742BB1E46D172DEFDF1C3080 /* CameraPermissionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPermissionService.swift; sourceTree = "<group>"; };
-		7526ADA64F3B0C2D5F7BB609 /* iPhone17Pro.glb */ = {isa = PBXFileReference; path = iPhone17Pro.glb; sourceTree = "<group>"; };
+		7526ADA64F3B0C2D5F7BB609 /* iPhone17Pro.glb */ = {isa = PBXFileReference; lastKnownFileType = file; path = iPhone17Pro.glb; sourceTree = "<group>"; };
 		7710971E10F35CADB722FA93 /* SettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsStore.swift; sourceTree = "<group>"; };
 		78A5F345BB3A4E029E2BFF11 /* TravelCurrencySelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TravelCurrencySelectionView.swift; sourceTree = "<group>"; };
 		7B36D17E768C01DC3A542C88 /* ScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScannerView.swift; sourceTree = "<group>"; };
@@ -119,7 +120,7 @@
 		881F2CAC126C8DC5811F6BD5 /* LocationCurrencyService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationCurrencyService.swift; sourceTree = "<group>"; };
 		8A5CD045B5AEB7DEC4CF985B /* ScanHistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanHistoryStore.swift; sourceTree = "<group>"; };
 		8D24B727FB0F34D5CC838F8D /* ScannerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScannerViewModel.swift; sourceTree = "<group>"; };
-		8E706249A2FB1960354C0EE2 /* PriceLens.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = PriceLens.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		8E706249A2FB1960354C0EE2 /* PriceLens.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PriceLens.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8EE99FD611514B70878EFD5E /* OnboardingBagPropArt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingBagPropArt.swift; sourceTree = "<group>"; };
 		923FA9533B06C6646BD731E2 /* ScannerControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScannerControlsView.swift; sourceTree = "<group>"; };
 		97F94D285DC5214B823D093F /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
@@ -140,7 +141,6 @@
 		E1828480853120E5C573F38E /* HomeCurrencySelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeCurrencySelectionView.swift; sourceTree = "<group>"; };
 		E267C44A4A398A87F534BB5F /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
 		E73D20532BA32EF5632CE9F3 /* OnboardingDemoScreenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingDemoScreenView.swift; sourceTree = "<group>"; };
-		4C87E83F4ED03E8192FBAF42 /* OnboardingConversionCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingConversionCard.swift; sourceTree = "<group>"; };
 		EBC153E03434EB80B6BFE2BC /* PriceOverlayItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PriceOverlayItem.swift; sourceTree = "<group>"; };
 		EF419D485A90936C57E1BDB4 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		F5F4DAB24B9E7D57869B897E /* ConversionEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversionEngine.swift; sourceTree = "<group>"; };
@@ -410,8 +410,6 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
-				TargetAttributes = {
-				};
 			};
 			buildConfigurationList = DFE2C05782AD8C5E8AD57972 /* Build configuration list for PBXProject "PriceLens" */;
 			developmentRegion = en;
@@ -538,6 +536,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = 8H5C9P92ZB;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"\"Vendor\"",
@@ -547,7 +546,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.pricelens.app;
+				PRODUCT_BUNDLE_IDENTIFIER = com.riskcreatives.pricelens;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -623,6 +622,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = 8H5C9P92ZB;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"\"Vendor\"",
@@ -632,7 +632,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.pricelens.app;
+				PRODUCT_BUNDLE_IDENTIFIER = com.riskcreatives.pricelens;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
