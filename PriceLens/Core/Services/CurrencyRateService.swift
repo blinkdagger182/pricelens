@@ -7,9 +7,63 @@ protocol CurrencyRateProviding {
 struct CachedExchangeRatePayload: Codable {
     let updatedAt: Date
     let nextUpdateAt: Date?
+    let fetchedAt: Date
+    let providerLastUpdateAt: Date?
+    let providerNextUpdateAt: Date?
+    let providerLastUpdateUnix: Int?
+    let providerNextUpdateUnix: Int?
     let provider: String
     let effectiveDate: String
     let ratesToMYR: [String: Decimal]
+
+    init(
+        updatedAt: Date,
+        nextUpdateAt: Date?,
+        fetchedAt: Date,
+        providerLastUpdateAt: Date?,
+        providerNextUpdateAt: Date?,
+        providerLastUpdateUnix: Int?,
+        providerNextUpdateUnix: Int?,
+        provider: String,
+        effectiveDate: String,
+        ratesToMYR: [String: Decimal]
+    ) {
+        self.updatedAt = updatedAt
+        self.nextUpdateAt = nextUpdateAt
+        self.fetchedAt = fetchedAt
+        self.providerLastUpdateAt = providerLastUpdateAt
+        self.providerNextUpdateAt = providerNextUpdateAt
+        self.providerLastUpdateUnix = providerLastUpdateUnix
+        self.providerNextUpdateUnix = providerNextUpdateUnix
+        self.provider = provider
+        self.effectiveDate = effectiveDate
+        self.ratesToMYR = ratesToMYR
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        updatedAt = try container.decode(Date.self, forKey: .updatedAt)
+        nextUpdateAt = try container.decodeIfPresent(Date.self, forKey: .nextUpdateAt)
+        fetchedAt = try container.decodeIfPresent(Date.self, forKey: .fetchedAt) ?? updatedAt
+        providerLastUpdateAt = try container.decodeIfPresent(Date.self, forKey: .providerLastUpdateAt)
+        providerNextUpdateAt = try container.decodeIfPresent(Date.self, forKey: .providerNextUpdateAt)
+        providerLastUpdateUnix = try container.decodeIfPresent(Int.self, forKey: .providerLastUpdateUnix)
+        providerNextUpdateUnix = try container.decodeIfPresent(Int.self, forKey: .providerNextUpdateUnix)
+        provider = try container.decode(String.self, forKey: .provider)
+        effectiveDate = try container.decode(String.self, forKey: .effectiveDate)
+        ratesToMYR = try container.decode([String: Decimal].self, forKey: .ratesToMYR)
+    }
+}
+
+struct RateStatusSnapshot: Equatable {
+    let isOfficial: Bool
+    let provider: String
+    let updatedAt: Date?
+    let nextUpdateAt: Date?
+    let fetchedAt: Date?
+    let providerLastUpdateUnix: Int?
+    let providerNextUpdateUnix: Int?
+    let effectiveDate: String?
 }
 
 final class CurrencyRateService: CurrencyRateProviding {
@@ -47,6 +101,32 @@ final class CurrencyRateService: CurrencyRateProviding {
         cachedPayload?.updatedAt
     }
 
+    var statusSnapshot: RateStatusSnapshot {
+        guard let cachedPayload else {
+            return RateStatusSnapshot(
+                isOfficial: false,
+                provider: "Local fallback",
+                updatedAt: nil,
+                nextUpdateAt: nil,
+                fetchedAt: nil,
+                providerLastUpdateUnix: nil,
+                providerNextUpdateUnix: nil,
+                effectiveDate: nil
+            )
+        }
+
+        return RateStatusSnapshot(
+            isOfficial: true,
+            provider: cachedPayload.provider,
+            updatedAt: cachedPayload.providerLastUpdateAt ?? cachedPayload.updatedAt,
+            nextUpdateAt: cachedPayload.providerNextUpdateAt ?? cachedPayload.nextUpdateAt,
+            fetchedAt: cachedPayload.fetchedAt,
+            providerLastUpdateUnix: cachedPayload.providerLastUpdateUnix,
+            providerNextUpdateUnix: cachedPayload.providerNextUpdateUnix,
+            effectiveDate: cachedPayload.effectiveDate
+        )
+    }
+
     var availableCurrencyCodes: [String] {
         let cachedCodes = cachedPayload?.ratesToMYR.keys.map { $0.uppercased() } ?? []
         if !cachedCodes.isEmpty {
@@ -65,8 +145,13 @@ final class CurrencyRateService: CurrencyRateProviding {
             let response = try await client.fetchLatestRates()
             let ratesToMYR = convertBackendRatesToMYR(response)
             let payload = CachedExchangeRatePayload(
-                updatedAt: response.fetchedAt,
-                nextUpdateAt: response.nextUpdateAt,
+                updatedAt: response.providerLastUpdateAt ?? response.fetchedAt,
+                nextUpdateAt: response.providerNextUpdateAt ?? response.nextUpdateAt,
+                fetchedAt: response.fetchedAt,
+                providerLastUpdateAt: response.providerLastUpdateAt,
+                providerNextUpdateAt: response.providerNextUpdateAt,
+                providerLastUpdateUnix: response.providerLastUpdateUnix,
+                providerNextUpdateUnix: response.providerNextUpdateUnix,
                 provider: response.provider,
                 effectiveDate: response.effectiveDate,
                 ratesToMYR: ratesToMYR

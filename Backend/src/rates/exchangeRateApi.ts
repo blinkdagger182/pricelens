@@ -17,6 +17,10 @@ type ExchangeRateApiResponse = {
 export type FetchedRates = {
   baseCurrency: string;
   effectiveDate: string;
+  providerLastUpdateAt: string;
+  providerLastUpdateUnix: number | null;
+  providerNextUpdateAt: string;
+  providerNextUpdateUnix: number | null;
   fetchedAt: string;
   nextUpdateAt: string;
   rates: RateMap;
@@ -52,19 +56,26 @@ export async function fetchLatestRates(baseCurrency = config.EXCHANGE_RATE_BASE_
   }
 
   const fetchedAt = new Date().toISOString();
-  const updateDate = payload.time_last_update_unix
-    ? new Date(payload.time_last_update_unix * 1000)
+  const providerLastUpdateUnix = payload.time_last_update_unix ?? null;
+  const providerNextUpdateUnix = payload.time_next_update_unix ?? null;
+  const updateDate = providerLastUpdateUnix !== null
+    ? new Date(providerLastUpdateUnix * 1000)
     : new Date(fetchedAt);
-  const nextUpdateAt = payload.time_next_update_unix
-    ? new Date(payload.time_next_update_unix * 1000).toISOString()
+  const providerLastUpdateAt = updateDate.toISOString();
+  const providerNextUpdateAt = providerNextUpdateUnix
+    ? new Date(providerNextUpdateUnix * 1000).toISOString()
     : new Date(updateDate.getTime() + 24 * 60 * 60 * 1000).toISOString();
   const effectiveDate = updateDate.toISOString().slice(0, 10);
 
   return {
     baseCurrency: payload.base_code ?? base,
     effectiveDate,
+    providerLastUpdateAt,
+    providerLastUpdateUnix,
+    providerNextUpdateAt,
+    providerNextUpdateUnix,
     fetchedAt,
-    nextUpdateAt,
+    nextUpdateAt: providerNextUpdateAt,
     rates,
     rawPayload: payload
   };

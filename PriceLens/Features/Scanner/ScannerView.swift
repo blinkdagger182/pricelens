@@ -367,13 +367,13 @@ private struct LiveScanProgressBar: View {
         GeometryReader { proxy in
             ZStack(alignment: .leading) {
                 RoundedRectangle(cornerRadius: 3, style: .continuous)
-                    .fill(Color.white.opacity(0.16))
+                    .fill(Color.white.opacity(0.14))
                 RoundedRectangle(cornerRadius: 3, style: .continuous)
                     .fill(AppTheme.accent)
                     .frame(width: max(0, proxy.size.width * min(max(progress, 0), 1)))
                     .shadow(color: AppTheme.accent.opacity(progress > 0 ? 0.75 : 0), radius: 10, y: 1)
             }
-            .opacity(progress > 0 ? 1 : 0)
+            .opacity(progress > 0 ? 1 : 0.42)
             .animation(.easeOut(duration: 0.14), value: progress)
         }
         .frame(height: 7)
@@ -454,11 +454,12 @@ private struct SnapshotReplacementText: View {
                 .blur(radius: 0.2)
 
             Text(item.converted)
-                .font(.system(size: min(max(frame.height * 0.68, 10), 44), weight: .heavy, design: .rounded))
+                .font(.system(size: min(max(frame.height * 0.72, 11), 46), weight: .black, design: .rounded))
                 .monospacedDigit()
                 .foregroundStyle(.black.opacity(0.92))
                 .lineLimit(1)
                 .minimumScaleFactor(0.42)
+                .shadow(color: .white.opacity(0.16), radius: 0.5, y: 0.5)
                 .padding(.horizontal, max(2, frame.width * 0.035))
         }
     }

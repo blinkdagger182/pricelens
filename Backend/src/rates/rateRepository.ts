@@ -4,6 +4,10 @@ import type { ExchangeRateSnapshot, LatestRatesResponse, RateMap } from "./types
 type UpsertSnapshotInput = {
   baseCurrency: string;
   effectiveDate: string;
+  providerLastUpdateAt: string;
+  providerLastUpdateUnix: number | null;
+  providerNextUpdateAt: string;
+  providerNextUpdateUnix: number | null;
   fetchedAt: string;
   nextUpdateAt: string;
   rates: RateMap;
@@ -19,14 +23,18 @@ export async function upsertSnapshot(input: UpsertSnapshotInput): Promise<Latest
         base_currency: input.baseCurrency.toUpperCase(),
         provider: "exchangerate-api",
         effective_date: input.effectiveDate,
+        provider_last_update_at: input.providerLastUpdateAt,
+        provider_last_update_unix: input.providerLastUpdateUnix,
+        provider_next_update_at: input.providerNextUpdateAt,
+        provider_next_update_unix: input.providerNextUpdateUnix,
         fetched_at: input.fetchedAt,
         next_update_at: input.nextUpdateAt,
         rates: input.rates,
         raw_payload: input.rawPayload
       },
-      { onConflict: "base_currency,effective_date" }
+      { onConflict: "base_currency,provider_last_update_at" }
     )
-    .select("id, base_currency, provider, effective_date, fetched_at, next_update_at, rates")
+    .select("id, base_currency, provider, effective_date, provider_last_update_at, provider_last_update_unix, provider_next_update_at, provider_next_update_unix, fetched_at, next_update_at, rates")
     .single();
 
   if (error) {
@@ -40,9 +48,9 @@ export async function getLatestSnapshot(baseCurrency: string): Promise<LatestRat
   const supabase = createSupabaseClient();
   const { data, error } = await supabase
     .from("exchange_rate_snapshots")
-    .select("id, base_currency, provider, effective_date, fetched_at, next_update_at, rates")
+    .select("id, base_currency, provider, effective_date, provider_last_update_at, provider_last_update_unix, provider_next_update_at, provider_next_update_unix, fetched_at, next_update_at, rates")
     .eq("base_currency", baseCurrency.toUpperCase())
-    .order("effective_date", { ascending: false })
+    .order("provider_last_update_at", { ascending: false })
     .order("fetched_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -59,6 +67,10 @@ function toLatestRatesResponse(snapshot: ExchangeRateSnapshot): LatestRatesRespo
     baseCurrency: snapshot.base_currency,
     provider: snapshot.provider,
     effectiveDate: snapshot.effective_date,
+    providerLastUpdateAt: snapshot.provider_last_update_at,
+    providerLastUpdateUnix: snapshot.provider_last_update_unix,
+    providerNextUpdateAt: snapshot.provider_next_update_at,
+    providerNextUpdateUnix: snapshot.provider_next_update_unix,
     fetchedAt: snapshot.fetched_at,
     nextUpdateAt: snapshot.next_update_at,
     rates: snapshot.rates

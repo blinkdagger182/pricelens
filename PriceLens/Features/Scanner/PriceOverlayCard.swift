@@ -2,6 +2,7 @@ import SwiftUI
 
 struct PriceOverlayCard: View {
     let item: PriceOverlayItem
+    static let metrics = CGSize(width: 154, height: 76)
 
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
@@ -26,10 +27,9 @@ struct PriceOverlayCard: View {
             }
         }
         .padding(12)
-        .frame(width: 154, height: 76)
+        .frame(width: Self.metrics.width, height: Self.metrics.height)
         .background(.black.opacity(0.78), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(AppTheme.accent.opacity(0.8), lineWidth: 1))
         .shadow(color: AppTheme.accent.opacity(0.30), radius: 14, y: 3)
     }
 }
-

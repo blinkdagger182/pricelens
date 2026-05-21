@@ -4,6 +4,10 @@ struct BackendRatesResponse: Decodable {
     let baseCurrency: String
     let provider: String
     let effectiveDate: String
+    let providerLastUpdateAt: Date?
+    let providerLastUpdateUnix: Int?
+    let providerNextUpdateAt: Date?
+    let providerNextUpdateUnix: Int?
     let fetchedAt: Date
     let nextUpdateAt: Date
     let rates: [String: Double]
