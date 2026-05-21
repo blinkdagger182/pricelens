@@ -71,8 +71,13 @@ struct ScannerView: View {
             let size = cameraProxy.size
             ZStack {
                 scannerBackground(size: size)
-                PriceOverlayLayer(items: viewModel.overlays, onTap: viewModel.tap)
+                PriceOverlayLayer(detections: viewModel.detections, items: viewModel.overlays, onTap: viewModel.tap)
                 topBar
+                if isProcessingSnap {
+                    SnapProcessingOverlay()
+                        .zIndex(30)
+                        .transition(.opacity)
+                }
                 if let selectedCurrencyRole {
                     Color.black.opacity(0.68)
                         .ignoresSafeArea()
@@ -262,17 +267,8 @@ struct ScannerView: View {
             viewModel.isFrozen = wasFrozenBeforeSnapPreview
             return
         }
-        var snapItems = viewModel.overlays.prefix(8).map { overlay in
-            SnapshotPriceOverlay(
-                converted: CurrencyFormatter.string(overlay.convertedAmount, code: overlay.targetCurrencyCode),
-                bounds: overlay.bounds,
-                overlay: overlay
-            )
-        }
-        if snapItems.isEmpty {
-            snapItems = await stillImageSnapshotOverlays(for: capturedImage, canvasSize: cameraViewportSize)
-        }
         let canvasSize = cameraViewportSize.width > 0 && cameraViewportSize.height > 0 ? cameraViewportSize : capturedImage.size
+        let snapItems = await stillImageSnapshotOverlays(for: capturedImage, canvasSize: canvasSize)
         let renderedImage = renderSnapshotImage(base: capturedImage, overlays: snapItems, canvasSize: canvasSize)
         snapshotPreview = ScannerSnapshot(
             baseImage: capturedImage,
@@ -292,17 +288,32 @@ struct ScannerView: View {
     private func stillImageSnapshotOverlays(for image: UIImage, canvasSize: CGSize) async -> [SnapshotPriceOverlay] {
         let service = OCRSnapshotService()
         let parser = PriceParser()
+        let prioritizer = PriceCandidatePrioritizer()
         let converter = ConversionEngine()
         let recognized = (try? await service.recognizedText(in: image)) ?? []
-        let parsed = recognized.flatMap {
+        let parseInputs = snapshotExpandedContext(from: recognized)
+        let fastParsed = recognized.flatMap {
+            parser.fastParseNumeric(text: $0.0, bounds: $0.1, selectedTravelCurrency: settings.travelCurrencyCode)
+        }
+        let fullParsed = parseInputs.flatMap {
             parser.parse(text: $0.0, bounds: $0.1, selectedTravelCurrency: settings.travelCurrencyCode)
         }
-        return parsed.prefix(8).map { candidate in
+        let mappedCandidates = mergeSnapshotCandidates(fastParsed + fullParsed).map { candidate in
+            ParsedPriceCandidate(
+                originalText: candidate.originalText,
+                amount: candidate.amount,
+                currencyCode: candidate.currencyCode,
+                confidence: candidate.confidence,
+                bounds: mappedPhotoBoundsToViewport(candidate.bounds, imageSize: image.size, canvasSize: canvasSize)
+            )
+        }
+        let parsed = prioritizer.sort(mappedCandidates, in: canvasSize)
+
+        return parsed.prefix(16).map { candidate in
             let convertedAmount = converter.convert(candidate.amount, from: candidate.currencyCode, to: settings.homeCurrencyCode)
-            let bounds = mappedPhotoBoundsToViewport(candidate.bounds, imageSize: image.size, canvasSize: canvasSize)
             return SnapshotPriceOverlay(
                 converted: CurrencyFormatter.string(convertedAmount, code: settings.homeCurrencyCode),
-                bounds: bounds,
+                bounds: candidate.bounds,
                 overlay: PriceOverlayItem(
                     id: UUID(),
                     originalText: candidate.originalText,
@@ -310,14 +321,90 @@ struct ScannerView: View {
                     sourceCurrencyCode: candidate.currencyCode,
                     targetCurrencyCode: settings.homeCurrencyCode,
                     convertedAmount: convertedAmount,
-                    bounds: bounds,
-                    displayPoint: CGPoint(x: bounds.midX, y: bounds.midY),
+                    bounds: candidate.bounds,
+                    displayPoint: CGPoint(x: candidate.bounds.midX, y: candidate.bounds.midY),
                     confidence: candidate.confidence,
                     lastSeenAt: Date(),
                     hitCount: 1
                 )
             )
         }
+    }
+
+    private func snapshotExpandedContext(from recognized: [(String, CGRect)]) -> [(String, CGRect)] {
+        let cleaned = recognized.compactMap { text, rect -> (String, CGRect)? in
+            let value = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !value.isEmpty else { return nil }
+            return (value, rect)
+        }
+        guard cleaned.count > 1 else { return cleaned }
+
+        let lines = snapshotGroupedLines(from: cleaned)
+        let combinedLines = lines.compactMap { items -> (String, CGRect)? in
+            let sorted = items.sorted { $0.1.minX < $1.1.minX }
+            guard sorted.count > 1 else { return nil }
+            let text = sorted.map(\.0).joined(separator: " ")
+            let bounds = sorted.dropFirst().reduce(sorted[0].1) { $0.union($1.1) }
+            return (text, bounds)
+        }
+
+        let adjacentPairs = lines.flatMap { items -> [(String, CGRect)] in
+            let sorted = items.sorted { $0.1.minX < $1.1.minX }
+            guard sorted.count > 1 else { return [] }
+            return sorted.indices.dropLast().flatMap { index -> [(String, CGRect)] in
+                let first = sorted[index]
+                let second = sorted[index + 1]
+                let gap = second.1.minX - first.1.maxX
+                let maxGap = max(first.1.height, second.1.height) * 3.2
+                guard gap >= -10, gap <= maxGap else { return [] }
+                return [
+                    (first.0 + second.0, first.1.union(second.1)),
+                    ("\(first.0) \(second.0)", first.1.union(second.1))
+                ]
+            }
+        }
+
+        return cleaned + adjacentPairs + combinedLines
+    }
+
+    private func snapshotGroupedLines(from items: [(String, CGRect)]) -> [[(String, CGRect)]] {
+        let sorted = items.sorted {
+            if abs($0.1.midY - $1.1.midY) < 10 { return $0.1.minX < $1.1.minX }
+            return $0.1.midY < $1.1.midY
+        }
+        return sorted.reduce(into: [[(String, CGRect)]]()) { groups, item in
+            if let index = groups.indices.last {
+                let group = groups[index]
+                let averageMidY = group.map(\.1.midY).reduce(0, +) / CGFloat(group.count)
+                let averageHeight = group.map(\.1.height).reduce(0, +) / CGFloat(group.count)
+                let tolerance = max(12, min(38, averageHeight * 0.86))
+                if abs(item.1.midY - averageMidY) <= tolerance {
+                    groups[index].append(item)
+                    return
+                }
+            }
+            groups.append([item])
+        }
+    }
+
+    private func mergeSnapshotCandidates(_ candidates: [ParsedPriceCandidate]) -> [ParsedPriceCandidate] {
+        var result: [ParsedPriceCandidate] = []
+        for candidate in candidates {
+            if let index = result.firstIndex(where: { snapshotCandidate($0, matches: candidate) }) {
+                if candidate.confidence > result[index].confidence {
+                    result[index] = candidate
+                }
+            } else {
+                result.append(candidate)
+            }
+        }
+        return result
+    }
+
+    private func snapshotCandidate(_ lhs: ParsedPriceCandidate, matches rhs: ParsedPriceCandidate) -> Bool {
+        lhs.amount == rhs.amount
+            && lhs.currencyCode == rhs.currencyCode
+            && hypot(lhs.bounds.midX - rhs.bounds.midX, lhs.bounds.midY - rhs.bounds.midY) < 56
     }
 
     private func mappedPhotoBoundsToViewport(_ bounds: CGRect, imageSize: CGSize, canvasSize: CGSize) -> CGRect {
@@ -379,6 +466,35 @@ private struct LiveScanProgressBar: View {
         .frame(height: 7)
         .allowsHitTesting(false)
         .accessibilityHidden(true)
+    }
+}
+
+private struct SnapProcessingOverlay: View {
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.42)
+            VStack(spacing: 12) {
+                ProgressView()
+                    .progressViewStyle(.circular)
+                    .tint(AppTheme.accent)
+                    .scaleEffect(1.18)
+                Text("Finding every price")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.white)
+                Text("Running still-image OCR")
+                    .font(.caption)
+                    .foregroundStyle(AppTheme.textSecondary)
+            }
+            .padding(.horizontal, 22)
+            .padding(.vertical, 18)
+            .background(.black.opacity(0.72), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(AppTheme.accent.opacity(0.36), lineWidth: 1)
+            )
+            .shadow(color: AppTheme.accent.opacity(0.22), radius: 18, y: 8)
+        }
+        .allowsHitTesting(true)
     }
 }
 

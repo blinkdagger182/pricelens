@@ -5,6 +5,10 @@ final class OverlayStabilizer {
     private var overlays: [PriceOverlayItem] = []
     private let keepAlive: TimeInterval = 1.2
 
+    var currentOverlays: [PriceOverlayItem] {
+        overlays
+    }
+
     func update(candidates: [ParsedPriceCandidate], targetCurrency: String, converter: ConversionEngine, containerSize: CGSize) -> [PriceOverlayItem] {
         let now = Date()
         overlays.removeAll { now.timeIntervalSince($0.lastSeenAt) > keepAlive }
@@ -87,4 +91,3 @@ final class OverlayStabilizer {
         return result
     }
 }
-

@@ -28,7 +28,7 @@ struct DataScannerRepresentable: UIViewControllerRepresentable {
         }
         let scanner = DataScannerViewController(
             recognizedDataTypes: [.text()],
-            qualityLevel: .balanced,
+            qualityLevel: .fast,
             recognizesMultipleItems: true,
             isHighFrameRateTrackingEnabled: true,
             isPinchToZoomEnabled: true,

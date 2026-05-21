@@ -2,6 +2,24 @@ import CoreGraphics
 import Foundation
 
 struct PriceParser {
+    func fastParseNumeric(text: String, bounds: CGRect, selectedTravelCurrency: String) -> [ParsedPriceCandidate] {
+        let cleaned = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard cleaned.count >= 1, bounds.width >= 24, bounds.height >= 10 else { return [] }
+        guard !isBarcodeLike(cleaned) else { return [] }
+
+        let explicitCode = Currency.supported.map(\.code).first { cleaned.uppercased().contains($0) }
+        let symbolCurrency = currencyFromSymbol(in: cleaned, selectedTravelCurrency: selectedTravelCurrency)
+        let currency = explicitCode ?? symbolCurrency ?? selectedTravelCurrency
+        let explicit = explicitCode != nil || symbolCurrency != nil
+        let confidence: Double = explicitCode != nil ? 0.93 : (symbolCurrency != nil ? 0.88 : fastNumericConfidence(cleaned, bounds: bounds))
+        guard confidence >= 0.58 else { return [] }
+
+        return fastNumericTokens(in: cleaned, explicit: explicit).compactMap { token in
+            guard let amount = decimal(from: token, currency: currency), amount > 0 else { return nil }
+            return ParsedPriceCandidate(originalText: cleaned, amount: amount, currencyCode: currency, confidence: confidence, bounds: bounds)
+        }
+    }
+
     func parse(text: String, bounds: CGRect, selectedTravelCurrency: String) -> [ParsedPriceCandidate] {
         let cleaned = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard cleaned.count >= 1, bounds.width >= 24, bounds.height >= 10 else { return [] }
@@ -18,6 +36,44 @@ struct PriceParser {
             guard amount > 0 else { return nil }
             return ParsedPriceCandidate(originalText: cleaned, amount: amount, currencyCode: currency, confidence: confidence, bounds: bounds)
         }
+    }
+
+    private func fastNumericConfidence(_ text: String, bounds: CGRect) -> Double {
+        let digits = text.filter(\.isNumber).count
+        guard digits >= 1, digits <= 8 else { return 0 }
+        if looksLikeYear(text) { return 0 }
+
+        let area = bounds.width * bounds.height
+        if digits >= 2, area >= 2_200 { return 0.74 }
+        if digits >= 2, bounds.height >= 24 { return 0.68 }
+        if digits >= 1, area >= 1_600 { return 0.60 }
+        return 0
+    }
+
+    private func fastNumericTokens(in text: String, explicit: Bool) -> [String] {
+        var tokens: [String] = []
+        var current = ""
+
+        for character in text {
+            if character.isNumber || character == "." || character == "," {
+                current.append(character)
+            } else {
+                appendFastToken(current, explicit: explicit, to: &tokens)
+                current = ""
+            }
+        }
+        appendFastToken(current, explicit: explicit, to: &tokens)
+        return tokens
+    }
+
+    private func appendFastToken(_ token: String, explicit: Bool, to tokens: inout [String]) {
+        let trimmed = token.trimmingCharacters(in: CharacterSet(charactersIn: ".,"))
+        guard !trimmed.isEmpty else { return }
+        let digits = trimmed.filter(\.isNumber).count
+        guard digits > 0 else { return }
+        guard explicit || digits <= 8 else { return }
+        guard explicit || !looksLikeYear(trimmed) else { return }
+        tokens.append(trimmed)
     }
 
     private func currencyFromSymbol(in text: String, selectedTravelCurrency: String) -> String? {

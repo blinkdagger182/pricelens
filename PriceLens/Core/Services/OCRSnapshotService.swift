@@ -16,36 +16,39 @@ struct OCRSnapshotService {
 
     func recognizedText(in image: UIImage) async throws -> [(String, CGRect)] {
         guard let cgImage = image.cgImage else { return [] }
+        let size = image.size
+        let orientation = CGImagePropertyOrientation(image.imageOrientation)
         return try await withCheckedThrowingContinuation { continuation in
-            let request = VNRecognizeTextRequest { request, error in
-                if let error {
-                    continuation.resume(throwing: error)
-                    return
+            Task.detached(priority: .userInitiated) {
+                let request = VNRecognizeTextRequest { request, error in
+                    if let error {
+                        continuation.resume(throwing: error)
+                        return
+                    }
+                    let observations = request.results as? [VNRecognizedTextObservation] ?? []
+                    let items = observations.compactMap { observation -> (String, CGRect)? in
+                        guard let candidate = observation.topCandidates(1).first else { return nil }
+                        let box = observation.boundingBox
+                        let rect = CGRect(
+                            x: box.minX * size.width,
+                            y: (1 - box.maxY) * size.height,
+                            width: box.width * size.width,
+                            height: box.height * size.height
+                        )
+                        return (candidate.string, rect)
+                    }
+                    continuation.resume(returning: items)
                 }
-                let observations = request.results as? [VNRecognizedTextObservation] ?? []
-                let size = image.size
-                let items = observations.compactMap { observation -> (String, CGRect)? in
-                    guard let candidate = observation.topCandidates(1).first else { return nil }
-                    let box = observation.boundingBox
-                    let rect = CGRect(
-                        x: box.minX * size.width,
-                        y: (1 - box.maxY) * size.height,
-                        width: box.width * size.width,
-                        height: box.height * size.height
-                    )
-                    return (candidate.string, rect)
-                }
-                continuation.resume(returning: items)
-            }
-            request.recognitionLevel = .accurate
-            request.usesLanguageCorrection = false
-            request.recognitionLanguages = ["en-US"]
+                request.recognitionLevel = .accurate
+                request.usesLanguageCorrection = false
+                request.recognitionLanguages = ["en-US"]
 
-            let handler = VNImageRequestHandler(cgImage: cgImage, orientation: CGImagePropertyOrientation(image.imageOrientation))
-            do {
-                try handler.perform([request])
-            } catch {
-                continuation.resume(throwing: error)
+                let handler = VNImageRequestHandler(cgImage: cgImage, orientation: orientation)
+                do {
+                    try handler.perform([request])
+                } catch {
+                    continuation.resume(throwing: error)
+                }
             }
         }
     }

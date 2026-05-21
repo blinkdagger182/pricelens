@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct PriceOverlayLayer: View {
+    let detections: [PriceDetectionItem]
     let items: [PriceOverlayItem]
     var onTap: (PriceOverlayItem) -> Void
 
@@ -8,11 +9,12 @@ struct PriceOverlayLayer: View {
         GeometryReader { proxy in
             let layouts = layoutItems(in: proxy.size)
             ZStack {
-                ForEach(layouts) { layout in
-                    ScannerCorners(color: .white, lineWidth: 3)
-                        .frame(width: max(layout.item.bounds.width, 44), height: max(layout.item.bounds.height, 28))
-                        .position(x: layout.item.bounds.midX, y: layout.item.bounds.midY)
+                ForEach(detections) { detection in
+                    PriceDetectionBracket(detection: detection)
                         .allowsHitTesting(false)
+                        .transition(.scale(scale: 0.92).combined(with: .opacity))
+                }
+                ForEach(layouts) { layout in
                     PriceOverlayCard(item: layout.item)
                         .position(layout.cardCenter)
                         .onTapGesture { onTap(layout.item) }
@@ -107,4 +109,20 @@ private struct LaidOutPriceOverlay: Identifiable {
     var id: UUID { item.id }
     let item: PriceOverlayItem
     let cardCenter: CGPoint
+}
+
+private struct PriceDetectionBracket: View {
+    let detection: PriceDetectionItem
+
+    private var size: CGSize {
+        CGSize(width: max(detection.bounds.width, 44), height: max(detection.bounds.height, 28))
+    }
+
+    var body: some View {
+        ZStack {
+            ScannerCorners(color: .white.opacity(0.92), lineWidth: 3)
+        }
+        .frame(width: size.width, height: size.height)
+        .position(x: detection.bounds.midX, y: detection.bounds.midY)
+    }
 }

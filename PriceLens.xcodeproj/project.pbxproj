@@ -67,6 +67,7 @@
 		EF467938FA44685712D3FFF8 /* OCRSnapshotService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6236DBF3C08DAFA79259AE1A /* OCRSnapshotService.swift */; };
 		F1FE502DA8583205EFA5D24F /* PriceOverlayCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C5954F3B97715987439136E /* PriceOverlayCard.swift */; };
 		FE166B1A08DA52C83EF1D552 /* DetectedPrice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 709C0F9E8D618ACEF71EF1FB /* DetectedPrice.swift */; };
+		FE9C0AB7814D42F0ACD1137B /* PriceCandidatePrioritizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE9C0AB6814D42F0ACD1137B /* PriceCandidatePrioritizer.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -144,6 +145,7 @@
 		EBC153E03434EB80B6BFE2BC /* PriceOverlayItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PriceOverlayItem.swift; sourceTree = "<group>"; };
 		EF419D485A90936C57E1BDB4 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		F5F4DAB24B9E7D57869B897E /* ConversionEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversionEngine.swift; sourceTree = "<group>"; };
+		FE9C0AB6814D42F0ACD1137B /* PriceCandidatePrioritizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PriceCandidatePrioritizer.swift; sourceTree = "<group>"; };
 		FF0935E16EB33733CA3D6F21 /* OnboardingHeroView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingHeroView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -170,6 +172,7 @@
 				881F2CAC126C8DC5811F6BD5 /* LocationCurrencyService.swift */,
 				6236DBF3C08DAFA79259AE1A /* OCRSnapshotService.swift */,
 				6050F01223D1106663C9207E /* OverlayStabilizer.swift */,
+				FE9C0AB6814D42F0ACD1137B /* PriceCandidatePrioritizer.swift */,
 				DDB9E9BE1EC2618074E6D190 /* PriceParser.swift */,
 			);
 			path = Services;
@@ -511,6 +514,7 @@
 				F1FE502DA8583205EFA5D24F /* PriceOverlayCard.swift in Sources */,
 				98885BB77EF362AC0894F36C /* PriceOverlayItem.swift in Sources */,
 				A1B1CA14AB6588640EF4093A /* PriceOverlayLayer.swift in Sources */,
+				FE9C0AB7814D42F0ACD1137B /* PriceCandidatePrioritizer.swift in Sources */,
 				C9560AC10710442D24BA53B8 /* PriceParser.swift in Sources */,
 				B5FA1A4AA9DDFBD9F4820996 /* PrimaryButton.swift in Sources */,
 				330208BFF520091203BC9EBD /* ScanHistoryItem.swift in Sources */,
@@ -546,9 +550,14 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.riskcreatives.pricelens;
 				SDKROOT = iphoneos;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -632,9 +641,14 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.riskcreatives.pricelens;
 				SDKROOT = iphoneos;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};

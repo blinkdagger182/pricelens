@@ -15,3 +15,11 @@ struct PriceOverlayItem: Identifiable, Equatable {
     var hitCount: Int
 }
 
+struct PriceDetectionItem: Identifiable, Equatable {
+    var id: String
+    var bounds: CGRect
+    var confidence: Double
+    var firstSeenAt: Date
+    var lastSeenAt: Date
+    var hasConvertedOverlay: Bool
+}
