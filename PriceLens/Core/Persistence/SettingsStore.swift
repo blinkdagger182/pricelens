@@ -52,7 +52,9 @@ final class SettingsStore: ObservableObject {
             }
         } catch {
             defaults.set(true, forKey: AppStorageKeys.hasAutoDetectedTravelCurrency)
-            print("Could not detect travel currency from location: \(error.localizedDescription)")
+            if !(error is LocationCurrencyError) {
+                print("Could not detect travel currency from location: \(error.localizedDescription)")
+            }
         }
     }
 

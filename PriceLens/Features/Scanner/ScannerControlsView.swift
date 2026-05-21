@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ScannerControlsView: View {
     @Binding var isFrozen: Bool
+    var snap: () -> Void
     var showHistory: () -> Void
     var showManual: () -> Void
 
@@ -9,11 +10,11 @@ struct ScannerControlsView: View {
         HStack {
             controlButton(icon: "clock.arrow.circlepath", title: "History", action: showHistory)
             Spacer()
-            Button { isFrozen.toggle() } label: {
+            Button(action: snap) {
                 ZStack {
                     Circle().fill(.white).frame(width: 66, height: 66)
                     Circle().stroke(AppTheme.accent, lineWidth: 4).frame(width: 76, height: 76)
-                    Image(systemName: isFrozen ? "play.fill" : "viewfinder").foregroundStyle(.black).font(.title2.bold())
+                    Image(systemName: "viewfinder").foregroundStyle(.black).font(.title2.bold())
                 }
             }
             .buttonStyle(.plain)
@@ -36,4 +37,3 @@ struct ScannerControlsView: View {
         .buttonStyle(.plain)
     }
 }
-

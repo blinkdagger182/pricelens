@@ -21,11 +21,12 @@ enum OnboardingScreenTexture {
         )
         .frame(width: canvas.width, height: canvas.height)
         .background(Color.black)
+        .clipShape(RoundedRectangle(cornerRadius: 42, style: .continuous))
 
         let renderer = ImageRenderer(content: content)
         renderer.proposedSize = ProposedViewSize(width: canvas.width, height: canvas.height)
         renderer.scale = renderScale
-        renderer.isOpaque = true
+        renderer.isOpaque = false
 
         if let img = renderer.uiImage, img.size.width > 32, img.size.height > 32 {
             return img

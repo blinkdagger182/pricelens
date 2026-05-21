@@ -55,10 +55,40 @@ struct CurrencySelectionContent: View {
                     }
                 }
             }
+            searchField
             PrimaryButton(title: "Continue", action: onContinue)
         }
         .padding(22)
-        .searchable(text: $searchText)
+    }
+
+    private var searchField: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "magnifyingglass")
+                .font(.headline)
+                .foregroundStyle(AppTheme.textSecondary)
+            TextField("Search currencies", text: $searchText)
+                .textInputAutocapitalization(.characters)
+                .autocorrectionDisabled()
+                .foregroundStyle(AppTheme.textPrimary)
+            if !searchText.isEmpty {
+                Button {
+                    searchText = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.headline)
+                        .foregroundStyle(AppTheme.textSecondary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Clear search")
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 13)
+        .background(AppTheme.surfaceSecondary, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(AppTheme.border, lineWidth: 1)
+        )
     }
 
     private var filteredCurrencies: [Currency] {

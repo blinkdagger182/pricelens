@@ -8,11 +8,11 @@ enum OnboardingHeroStoryPhase: Int, CaseIterable {
 }
 
 enum OnboardingHeroStory {
-    static let cycleDuration: TimeInterval = 18.0
+    static let cycleDuration: TimeInterval = 12.4
 
-    fileprivate static let tEstablish: TimeInterval = 4.0
-    fileprivate static let tStartScan: TimeInterval = 5.2
-    fileprivate static let tStartReveal: TimeInterval = 8.4
+    fileprivate static let tEstablish: TimeInterval = 3.85
+    fileprivate static let tStartScan: TimeInterval = 4.45
+    fileprivate static let tStartReveal: TimeInterval = 7.4
     fileprivate static let tLoopEnd: TimeInterval = cycleDuration
 
     static func normalizedTime(_ elapsed: TimeInterval) -> Double {
@@ -43,10 +43,9 @@ enum OnboardingHeroStory {
 
     static func layoutBlend(at elapsed: TimeInterval) -> (toScan: Double, toReveal: Double) {
         let u = normalizedTime(elapsed)
-        // Skip the intermediate side-by-side scanning pose. The visual story now goes
-        // directly from the opening composition into the expanded phone scene.
-        let toReveal = easeIn(tEstablish, tStartScan, u)
-        return (0, toReveal)
+        let toScan = linearStep(tEstablish, tStartScan, u)
+        let toReveal = easeIn(tStartReveal - 0.08, tStartReveal + 0.42, u)
+        return (toScan, toReveal)
     }
 
     static func conversionCardHandoff(at elapsed: TimeInterval) -> (visibility: Double, expansion: Double) {
@@ -54,6 +53,18 @@ enum OnboardingHeroStory {
         let visibility = smoothstep(tStartReveal - 0.32, tStartReveal - 0.12, u)
         let expansion = smoothstep(tStartReveal - 0.10, tStartReveal + 0.46, u)
         return (visibility, expansion)
+    }
+
+    static func loopOpacity(at elapsed: TimeInterval) -> Double {
+        let u = normalizedTime(elapsed)
+        let fadeIn = smoothstep(0.08, 0.42, u)
+        let fadeOut = 1 - smoothstep(tLoopEnd - 0.42, tLoopEnd - 0.08, u)
+        return min(fadeIn, fadeOut)
+    }
+
+    fileprivate static func linearStep(_ e0: TimeInterval, _ e1: TimeInterval, _ x: TimeInterval) -> Double {
+        guard e1 > e0 else { return x >= e1 ? 1 : 0 }
+        return Double((x - e0) / (e1 - e0)).clamped(to: 0...1)
     }
 
     fileprivate static func easeIn(_ e0: TimeInterval, _ e1: TimeInterval, _ x: TimeInterval) -> Double {

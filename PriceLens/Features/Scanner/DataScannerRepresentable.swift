@@ -5,18 +5,25 @@ struct DataScannerRepresentable: UIViewControllerRepresentable {
     var onRecognizedItems: ([(String, CGRect)]) -> Void
     var onUnavailable: () -> Void
     var onReady: () -> Void
+    var onCaptureReady: ((@escaping () async -> UIImage?) -> Void)?
 
     func makeUIViewController(context: Context) -> UIViewController {
         #if targetEnvironment(simulator)
         let controller = UIViewController()
         controller.view.backgroundColor = .black
-        DispatchQueue.main.async { onUnavailable() }
+        DispatchQueue.main.async {
+            onCaptureReady?({ nil })
+            onUnavailable()
+        }
         return controller
         #else
         guard DataScannerViewController.isSupported, DataScannerViewController.isAvailable else {
             let controller = UIViewController()
             controller.view.backgroundColor = .black
-            DispatchQueue.main.async { onUnavailable() }
+            DispatchQueue.main.async {
+                onCaptureReady?({ nil })
+                onUnavailable()
+            }
             return controller
         }
         let scanner = DataScannerViewController(
@@ -30,6 +37,13 @@ struct DataScannerRepresentable: UIViewControllerRepresentable {
         )
         scanner.delegate = context.coordinator
         context.coordinator.scanner = scanner
+        let capturePhoto: () async -> UIImage? = { [weak scanner] in
+            guard let scanner else { return nil }
+            return try? await scanner.capturePhoto()
+        }
+        DispatchQueue.main.async {
+            onCaptureReady?(capturePhoto)
+        }
         return ScannerHostViewController(scanner: scanner, onReady: onReady, onUnavailable: onUnavailable)
         #endif
     }

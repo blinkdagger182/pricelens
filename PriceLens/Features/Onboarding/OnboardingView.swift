@@ -24,10 +24,10 @@ struct OnboardingView: View {
             OnboardingHeroView()
                 .padding(.top, 6)
             VStack(spacing: 10) {
-                Text("PriceLens").font(.largeTitle.bold())
-                Text("Currency Camera for Travel").font(.headline).foregroundStyle(AppTheme.textSecondary)
+                Text("Welcome to PriceLens").font(.largeTitle.bold())
+                Text("Currency Camera for Travel").font(.title3.bold()).foregroundStyle(AppTheme.textSecondary)
                 Text("Point your camera at price tags, menus, or receipts and see converted prices float in place.")
-                    .font(.subheadline)
+                    .font(.body)
                     .foregroundStyle(AppTheme.textSecondary)
                     .multilineTextAlignment(.center)
             }

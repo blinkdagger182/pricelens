@@ -2,6 +2,7 @@ import SwiftUI
 
 struct OnboardingHeroView: View {
     @State private var glowPhase = false
+    @State private var isActive = true
     @State private var animationStartTime = ProcessInfo.processInfo.systemUptime
 
     var body: some View {
@@ -11,31 +12,46 @@ struct OnboardingHeroView: View {
             let u = OnboardingHeroStory.normalizedTime(elapsed)
             let (_, progress) = OnboardingHeroStory.phase(at: elapsed)
             let handoff = OnboardingHeroStory.conversionCardHandoff(at: elapsed)
+            let loopOpacity = OnboardingHeroStory.loopOpacity(at: elapsed)
 
             let cardT: CGFloat = CGFloat(handoff.expansion)
-            let phoneAlpha: Double = phase == .reveal ? Double(1 - smoothstep(0.34, 0.50, progress)) : 1
+            let phoneAlpha: Double = phase == .reveal ? Double(1 - smoothstep(0.14, 0.26, progress)) : 1
+            let cardStartOffset = CGSize(width: 0, height: 48)
+            let cardOffset = CGSize(
+                width: lerp(cardStartOffset.width, 0, cardT),
+                height: lerp(cardStartOffset.height, 0, cardT)
+            )
 
             VStack(spacing: 10) {
                 ZStack {
                     ambientGlow
-                    iPhone3DHeroSceneView()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .opacity(phoneAlpha)
+                    if isActive {
+                        iPhone3DHeroSceneView()
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .opacity(phoneAlpha)
+                    }
                     standaloneConversionCard()
                         .opacity(handoff.visibility)
                         .scaleEffect(lerp(0.68, 1.0, cardT), anchor: .center)
+                        .offset(cardOffset)
                 }
                 .frame(height: 372)
 
                 storyCaption(phase: phase, cycleT: u)
             }
+            .opacity(loopOpacity)
         }
         .frame(height: 428)
         .onAppear {
+            isActive = true
             animationStartTime = ProcessInfo.processInfo.systemUptime
             withAnimation(.easeInOut(duration: 2.4).repeatForever(autoreverses: true)) {
                 glowPhase = true
             }
+        }
+        .onDisappear {
+            isActive = false
+            glowPhase = false
         }
     }
 
@@ -57,13 +73,13 @@ struct OnboardingHeroView: View {
     private func storyCaption(phase: OnboardingHeroStoryPhase, cycleT: Double) -> some View {
         VStack(spacing: 6) {
             Text(captionTitle(phase))
-                .font(.caption.bold())
+                .font(.subheadline.bold())
                 .foregroundStyle(.white.opacity(0.92))
-                .padding(.horizontal, 14)
-                .padding(.vertical, 8)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 9)
                 .background(.black.opacity(0.72), in: Capsule())
             Text(captionSubtitle(phase))
-                .font(.caption)
+                .font(.subheadline)
                 .foregroundStyle(AppTheme.textSecondary)
                 .multilineTextAlignment(.center)
         }

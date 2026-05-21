@@ -10,6 +10,7 @@ enum LocationCurrencyError: Error {
 final class LocationCurrencyService: NSObject, CLLocationManagerDelegate {
     private let manager = CLLocationManager()
     private let geocoder = CLGeocoder()
+    private var authorizationContinuation: CheckedContinuation<CLAuthorizationStatus, Never>?
     private var continuation: CheckedContinuation<String, Error>?
 
     override init() {
@@ -23,19 +24,36 @@ final class LocationCurrencyService: NSObject, CLLocationManagerDelegate {
             throw LocationCurrencyError.unavailable
         }
 
-        let status = manager.authorizationStatus
+        let status = await authorizationStatus()
         if status == .denied || status == .restricted {
             throw LocationCurrencyError.denied
         }
 
-        if status == .notDetermined {
-            manager.requestWhenInUseAuthorization()
+        guard status == .authorizedWhenInUse || status == .authorizedAlways else {
+            throw LocationCurrencyError.unavailable
         }
 
         return try await withCheckedThrowingContinuation { continuation in
             self.continuation = continuation
             manager.requestLocation()
         }
+    }
+
+    private func authorizationStatus() async -> CLAuthorizationStatus {
+        let status = manager.authorizationStatus
+        guard status == .notDetermined else { return status }
+        return await withCheckedContinuation { continuation in
+            authorizationContinuation = continuation
+            manager.requestWhenInUseAuthorization()
+        }
+    }
+
+    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        guard let authorizationContinuation else { return }
+        let status = manager.authorizationStatus
+        guard status != .notDetermined else { return }
+        self.authorizationContinuation = nil
+        authorizationContinuation.resume(returning: status)
     }
 
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
@@ -60,6 +78,10 @@ final class LocationCurrencyService: NSObject, CLLocationManagerDelegate {
     }
 
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        if let error = error as? CLError, error.code == .denied {
+            resume(with: .failure(LocationCurrencyError.denied))
+            return
+        }
         resume(with: .failure(error))
     }
 

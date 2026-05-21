@@ -15,6 +15,7 @@ struct PriceParser {
 
         return numericTokens(in: cleaned, currency: currency, explicit: explicitCode != nil || symbolCurrency != nil).compactMap { token in
             guard let amount = decimal(from: token, currency: currency) else { return nil }
+            guard amount > 0 else { return nil }
             return ParsedPriceCandidate(originalText: cleaned, amount: amount, currencyCode: currency, confidence: confidence, bounds: bounds)
         }
     }
@@ -84,4 +85,3 @@ struct PriceParser {
         return intValue >= 1900 && intValue <= 2099
     }
 }
-

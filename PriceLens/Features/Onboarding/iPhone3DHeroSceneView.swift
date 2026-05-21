@@ -26,6 +26,7 @@ struct iPhone3DHeroSceneView: UIViewRepresentable {
 
     static func dismantleUIView(_ uiView: SCNView, coordinator: Coordinator) {
         coordinator.stopDisplayLink()
+        uiView.scene = nil
     }
 
     func makeCoordinator() -> Coordinator {
@@ -98,26 +99,30 @@ struct iPhone3DHeroSceneView: UIViewRepresentable {
         )
 
         private let layoutScanning = WorldLayout(
-            cameraPosition: SCNVector3(0.008, 0.031, 0.292),
-            cameraTarget: SCNVector3(-0.026, 0.012, 0.012),
-            phonePosition: SCNVector3(0.012, -0.018, 0.044),
-            phoneEuler: SCNVector3(-0.15, -0.12, 0.018),
+            cameraPosition: SCNVector3(-0.001, 0.029, 0.320),
+            cameraTarget: SCNVector3(0, 0.016, 0.018),
+            phonePosition: SCNVector3(0, 0.018, 0.056),
+            phoneEuler: SCNVector3(-0.13, -0.04, 0),
             phoneScale: 1.08,
             bagPosition: SCNVector3(-0.11, -0.02, 0),
             bagEuler: SCNVector3(-0.08, -0.18, 0.02),
-            bagOpacity: 1
+            bagOpacity: 0
         )
 
         private let layoutHero = WorldLayout(
-            cameraPosition: SCNVector3(-0.001, 0.028, 0.326),
-            cameraTarget: SCNVector3(0, 0.018, 0.02),
-            phonePosition: SCNVector3(-0.01, 0.022, 0.058),
+            cameraPosition: SCNVector3(-0.001, 0.029, 0.320),
+            cameraTarget: SCNVector3(0, 0.016, 0.018),
+            phonePosition: SCNVector3(0, 0.018, 0.056),
             phoneEuler: SCNVector3(-0.13, -0.04, 0),
-            phoneScale: 1.02,
+            phoneScale: 1.08,
             bagPosition: SCNVector3(-0.12, -0.035, -0.072),
             bagEuler: SCNVector3(-0.08, -0.18, 0.02),
             bagOpacity: 0
         )
+
+        deinit {
+            stopDisplayLink()
+        }
 
         func attach(to view: SCNView) {
             scnView = view

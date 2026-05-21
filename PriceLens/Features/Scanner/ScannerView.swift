@@ -10,6 +10,13 @@ struct ScannerView: View {
     @State private var showSettings = false
     @State private var selectedCurrencyRole: ScannerCurrencyRole?
     @State private var fullPickerRole: ScannerCurrencyRole?
+    @State private var snapshotPreview: ScannerSnapshot?
+    @State private var isProcessingSnap = false
+    @State private var scannerPhotoCapture: (() async -> UIImage?)?
+    @State private var cameraViewportSize: CGSize = .zero
+    @State private var wasFrozenBeforeSnapPreview = false
+    @State private var wasFrozenBeforeBlockingUI = false
+    @State private var isBlockingUIPauseActive = false
 
     private let bottomChromeHeight: CGFloat = 152
     private let cameraCornerRadius: CGFloat = 34
@@ -33,8 +40,13 @@ struct ScannerView: View {
             }
             .sheet(isPresented: $showHistory) { HistoryView() }
             .sheet(isPresented: $showManual) { ManualConverterView() }
-            .sheet(isPresented: $showSettings) { SettingsView() }
-            .sheet(item: $fullPickerRole) { role in
+            .sheet(isPresented: $showSettings, onDismiss: refreshBlockingUIPause) { SettingsView() }
+            .sheet(item: $snapshotPreview, onDismiss: resumeLiveDetectionAfterSnap) { snapshot in
+                ScannerSnapshotPreview(snapshot: snapshot)
+                    .presentationDetents([.large])
+                    .presentationDragIndicator(.visible)
+            }
+            .sheet(item: $fullPickerRole, onDismiss: refreshBlockingUIPause) { role in
                 NavigationStack {
                     CurrencyPickerView(
                         title: role.title,
@@ -48,6 +60,9 @@ struct ScannerView: View {
                 await viewModel.refreshRatesIfNeeded()
                 await settings.updateTravelCurrencyFromCurrentLocationIfNeeded()
             }
+            .onChange(of: showSettings) { _, _ in refreshBlockingUIPause() }
+            .onChange(of: selectedCurrencyRole) { _, _ in refreshBlockingUIPause() }
+            .onChange(of: fullPickerRole) { _, _ in refreshBlockingUIPause() }
         }
     }
 
@@ -85,12 +100,23 @@ struct ScannerView: View {
                 RoundedRectangle(cornerRadius: cameraCornerRadius, style: .continuous)
                     .strokeBorder(Color.black.opacity(0.95), lineWidth: 3)
             )
+            .overlay(alignment: .bottom) {
+                LiveScanProgressBar(progress: visibleScanProgress)
+                    .padding(.horizontal, 22)
+                    .padding(.bottom, 8)
+            }
             .shadow(color: .black.opacity(0.55), radius: 18, y: 8)
             .task(id: "\(Int(size.width))x\(Int(size.height))") {
                 while !Task.isCancelled {
                     try? await Task.sleep(for: .milliseconds(500))
                     viewModel.pruneStaleOverlays(homeCurrency: settings.homeCurrencyCode, containerSize: size)
                 }
+            }
+            .onAppear {
+                cameraViewportSize = size
+            }
+            .onChange(of: size) { _, newValue in
+                cameraViewportSize = newValue
             }
         }
     }
@@ -100,10 +126,15 @@ struct ScannerView: View {
             AppTheme.background
             ScannerControlsView(
                 isFrozen: $viewModel.isFrozen,
+                snap: startSnap,
                 showHistory: { showHistory = true },
                 showManual: { showManual = true }
             )
         }
+    }
+
+    private var visibleScanProgress: CGFloat {
+        viewModel.scanProgress
     }
 
     private func scannerBackground(size: CGSize) -> some View {
@@ -111,7 +142,8 @@ struct ScannerView: View {
             DataScannerRepresentable(
                 onRecognizedItems: { items in viewModel.process(recognized: items, travelCurrency: settings.travelCurrencyCode, homeCurrency: settings.homeCurrencyCode, containerSize: size) },
                 onUnavailable: { viewModel.scannerUnavailable() },
-                onReady: { viewModel.scannerBecameAvailable() }
+                onReady: { viewModel.scannerBecameAvailable() },
+                onCaptureReady: { capture in scannerPhotoCapture = capture }
             )
             if viewModel.state == .scannerUnavailable || viewModel.state == .permissionDenied {
                 AppTheme.background
@@ -182,6 +214,19 @@ struct ScannerView: View {
         }
     }
 
+    @MainActor
+    private func refreshBlockingUIPause() {
+        let shouldPause = showSettings || selectedCurrencyRole != nil || fullPickerRole != nil
+        if shouldPause, !isBlockingUIPauseActive {
+            wasFrozenBeforeBlockingUI = viewModel.isFrozen
+            isBlockingUIPauseActive = true
+            viewModel.isFrozen = true
+        } else if !shouldPause, isBlockingUIPauseActive {
+            isBlockingUIPauseActive = false
+            viewModel.isFrozen = wasFrozenBeforeBlockingUI
+        }
+    }
+
     private func binding(for role: ScannerCurrencyRole) -> Binding<String> {
         Binding(
             get: {
@@ -195,6 +240,312 @@ struct ScannerView: View {
                     settings.selectTravelCurrency(code)
                 }
             }
+        )
+    }
+
+    private func startSnap() {
+        guard let scannerPhotoCapture else { return }
+        Task {
+            await captureLiveSnap(scannerPhotoCapture)
+        }
+    }
+
+    @MainActor
+    private func captureLiveSnap(_ capturePhoto: @escaping () async -> UIImage?) async {
+        isProcessingSnap = true
+        wasFrozenBeforeSnapPreview = viewModel.isFrozen
+        viewModel.isFrozen = true
+        defer {
+            isProcessingSnap = false
+        }
+        guard let capturedImage = await capturePhoto() else {
+            viewModel.isFrozen = wasFrozenBeforeSnapPreview
+            return
+        }
+        var snapItems = viewModel.overlays.prefix(8).map { overlay in
+            SnapshotPriceOverlay(
+                converted: CurrencyFormatter.string(overlay.convertedAmount, code: overlay.targetCurrencyCode),
+                bounds: overlay.bounds,
+                overlay: overlay
+            )
+        }
+        if snapItems.isEmpty {
+            snapItems = await stillImageSnapshotOverlays(for: capturedImage, canvasSize: cameraViewportSize)
+        }
+        let canvasSize = cameraViewportSize.width > 0 && cameraViewportSize.height > 0 ? cameraViewportSize : capturedImage.size
+        let renderedImage = renderSnapshotImage(base: capturedImage, overlays: snapItems, canvasSize: canvasSize)
+        snapshotPreview = ScannerSnapshot(
+            baseImage: capturedImage,
+            renderedImage: renderedImage,
+            overlays: snapItems,
+            canvasSize: canvasSize,
+            shareURL: writeSnapshotForSharing(renderedImage)
+        )
+    }
+
+    @MainActor
+    private func resumeLiveDetectionAfterSnap() {
+        viewModel.isFrozen = wasFrozenBeforeSnapPreview
+    }
+
+    @MainActor
+    private func stillImageSnapshotOverlays(for image: UIImage, canvasSize: CGSize) async -> [SnapshotPriceOverlay] {
+        let service = OCRSnapshotService()
+        let parser = PriceParser()
+        let converter = ConversionEngine()
+        let recognized = (try? await service.recognizedText(in: image)) ?? []
+        let parsed = recognized.flatMap {
+            parser.parse(text: $0.0, bounds: $0.1, selectedTravelCurrency: settings.travelCurrencyCode)
+        }
+        return parsed.prefix(8).map { candidate in
+            let convertedAmount = converter.convert(candidate.amount, from: candidate.currencyCode, to: settings.homeCurrencyCode)
+            let bounds = mappedPhotoBoundsToViewport(candidate.bounds, imageSize: image.size, canvasSize: canvasSize)
+            return SnapshotPriceOverlay(
+                converted: CurrencyFormatter.string(convertedAmount, code: settings.homeCurrencyCode),
+                bounds: bounds,
+                overlay: PriceOverlayItem(
+                    id: UUID(),
+                    originalText: candidate.originalText,
+                    amount: candidate.amount,
+                    sourceCurrencyCode: candidate.currencyCode,
+                    targetCurrencyCode: settings.homeCurrencyCode,
+                    convertedAmount: convertedAmount,
+                    bounds: bounds,
+                    displayPoint: CGPoint(x: bounds.midX, y: bounds.midY),
+                    confidence: candidate.confidence,
+                    lastSeenAt: Date(),
+                    hitCount: 1
+                )
+            )
+        }
+    }
+
+    private func mappedPhotoBoundsToViewport(_ bounds: CGRect, imageSize: CGSize, canvasSize: CGSize) -> CGRect {
+        guard canvasSize.width > 0, canvasSize.height > 0 else { return bounds }
+        let scale = max(canvasSize.width / imageSize.width, canvasSize.height / imageSize.height)
+        let displayedWidth = imageSize.width * scale
+        let displayedHeight = imageSize.height * scale
+        let cropX = max(0, (displayedWidth - canvasSize.width) / 2)
+        let cropY = max(0, (displayedHeight - canvasSize.height) / 2)
+        return CGRect(
+            x: bounds.origin.x * scale - cropX,
+            y: bounds.origin.y * scale - cropY,
+            width: bounds.width * scale,
+            height: bounds.height * scale
+        )
+    }
+
+    @MainActor
+    private func renderSnapshotImage(base image: UIImage, overlays: [SnapshotPriceOverlay], canvasSize: CGSize) -> UIImage {
+        let renderSize = canvasSize.width > 0 && canvasSize.height > 0 ? canvasSize : image.size
+        let content = SnapshotRenderedImage(image: image, overlays: overlays, canvasSize: renderSize)
+            .frame(width: renderSize.width, height: renderSize.height)
+        let renderer = ImageRenderer(content: content)
+        renderer.proposedSize = ProposedViewSize(width: renderSize.width, height: renderSize.height)
+        renderer.scale = image.scale
+        return renderer.uiImage ?? image
+    }
+
+    private func writeSnapshotForSharing(_ image: UIImage) -> URL? {
+        guard let data = image.pngData() else { return nil }
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("PriceLens-Snap-\(UUID().uuidString)")
+            .appendingPathExtension("png")
+        do {
+            try data.write(to: url, options: .atomic)
+            return url
+        } catch {
+            return nil
+        }
+    }
+}
+
+private struct LiveScanProgressBar: View {
+    let progress: CGFloat
+
+    var body: some View {
+        GeometryReader { proxy in
+            ZStack(alignment: .leading) {
+                RoundedRectangle(cornerRadius: 3, style: .continuous)
+                    .fill(Color.white.opacity(0.16))
+                RoundedRectangle(cornerRadius: 3, style: .continuous)
+                    .fill(AppTheme.accent)
+                    .frame(width: max(0, proxy.size.width * min(max(progress, 0), 1)))
+                    .shadow(color: AppTheme.accent.opacity(progress > 0 ? 0.75 : 0), radius: 10, y: 1)
+            }
+            .opacity(progress > 0 ? 1 : 0)
+            .animation(.easeOut(duration: 0.14), value: progress)
+        }
+        .frame(height: 7)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+}
+
+private struct ScannerSnapshot: Identifiable {
+    let id = UUID()
+    let baseImage: UIImage
+    let renderedImage: UIImage
+    let overlays: [SnapshotPriceOverlay]
+    let canvasSize: CGSize
+    let shareURL: URL?
+}
+
+private struct SnapshotPriceOverlay: Identifiable {
+    let id = UUID()
+    let converted: String
+    let bounds: CGRect
+    let overlay: PriceOverlayItem
+}
+
+private struct SnapshotRenderedImage: View {
+    let image: UIImage
+    let overlays: [SnapshotPriceOverlay]
+    let canvasSize: CGSize
+    var onTap: ((SnapshotPriceOverlay) -> Void)?
+
+    var body: some View {
+        ZStack {
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFill()
+            ForEach(overlays) { item in
+                let frame = SnapshotReplacementLayout.frame(for: item.bounds, in: canvasSize)
+                SnapshotReplacementText(item: item, frame: frame)
+                    .frame(width: frame.width, height: frame.height)
+                    .contentShape(RoundedRectangle(cornerRadius: max(5, frame.height * 0.16), style: .continuous))
+                    .position(x: frame.midX, y: frame.midY)
+                    .onTapGesture { onTap?(item) }
+                    .zIndex(Double(item.bounds.minY))
+            }
+        }
+        .clipped()
+    }
+}
+
+private enum SnapshotReplacementLayout {
+    static func frame(for bounds: CGRect, in canvasSize: CGSize) -> CGRect {
+        let paddedWidth = max(bounds.width * 1.08, 44)
+        let paddedHeight = max(bounds.height * 1.18, 18)
+        var rect = CGRect(
+            x: bounds.midX - paddedWidth / 2,
+            y: bounds.midY - paddedHeight / 2,
+            width: paddedWidth,
+            height: paddedHeight
+        )
+        rect.origin.x = min(max(rect.origin.x, 10), max(10, canvasSize.width - rect.width - 10))
+        rect.origin.y = min(max(rect.origin.y, 10), max(10, canvasSize.height - rect.height - 10))
+        return rect
+    }
+}
+
+private struct SnapshotReplacementText: View {
+    let item: SnapshotPriceOverlay
+    let frame: CGRect
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: max(5, frame.height * 0.16), style: .continuous)
+                .fill(Color(red: 0.94, green: 0.91, blue: 0.82).opacity(0.92))
+                .overlay(
+                    RoundedRectangle(cornerRadius: max(5, frame.height * 0.16), style: .continuous)
+                        .stroke(Color.black.opacity(0.06), lineWidth: 0.6)
+                )
+                .blur(radius: 0.2)
+
+            Text(item.converted)
+                .font(.system(size: min(max(frame.height * 0.68, 10), 44), weight: .heavy, design: .rounded))
+                .monospacedDigit()
+                .foregroundStyle(.black.opacity(0.92))
+                .lineLimit(1)
+                .minimumScaleFactor(0.42)
+                .padding(.horizontal, max(2, frame.width * 0.035))
+        }
+    }
+}
+
+private struct ScannerSnapshotPreview: View {
+    let snapshot: ScannerSnapshot
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var history: ScanHistoryStore
+    @State private var didCopy = false
+    @State private var selectedOverlay: PriceOverlayItem?
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                AppTheme.background.ignoresSafeArea()
+                VStack(spacing: 18) {
+                    SnapshotRenderedImage(
+                        image: snapshot.baseImage,
+                        overlays: snapshot.overlays,
+                        canvasSize: snapshot.canvasSize,
+                        onTap: { selectedOverlay = $0.overlay }
+                    )
+                        .aspectRatio(snapshot.canvasSize, contentMode: .fit)
+                        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                                .stroke(AppTheme.border, lineWidth: 1)
+                        )
+                        .shadow(color: .black.opacity(0.45), radius: 18, y: 10)
+
+                    HStack(spacing: 12) {
+                        Button {
+                            UIPasteboard.general.image = snapshot.renderedImage
+                            didCopy = true
+                        } label: {
+                            Label(didCopy ? "Copied" : "Copy", systemImage: didCopy ? "checkmark" : "doc.on.doc")
+                                .font(.headline)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 52)
+                                .background(AppTheme.surfaceSecondary, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(.white)
+
+                        if let shareURL = snapshot.shareURL {
+                            ShareLink(item: shareURL) {
+                                Label("Share", systemImage: "square.and.arrow.up")
+                                    .font(.headline)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 52)
+                                    .background(AppTheme.accent, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                            }
+                            .buttonStyle(.plain)
+                            .foregroundStyle(.black)
+                        }
+                    }
+                }
+                .padding(20)
+            }
+            .navigationTitle("Snap")
+            .navigationBarTitleDisplayMode(.inline)
+            .sheet(item: $selectedOverlay) { overlay in
+                ScanResultDetailSheet(overlay: overlay) {
+                    history.add(historyItem(from: overlay))
+                }
+                    .presentationDetents([.medium])
+                    .presentationDragIndicator(.visible)
+            }
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+    }
+
+    private func historyItem(from overlay: PriceOverlayItem) -> ScanHistoryItem {
+        ScanHistoryItem(
+            originalAmount: overlay.amount,
+            originalText: overlay.originalText,
+            sourceCurrencyCode: overlay.sourceCurrencyCode,
+            convertedAmount: overlay.convertedAmount,
+            targetCurrencyCode: overlay.targetCurrencyCode,
+            rateDescription: ConversionEngine().rateDescription(from: overlay.sourceCurrencyCode, to: overlay.targetCurrencyCode),
+            createdAt: Date(),
+            note: "Snap"
         )
     }
 }
