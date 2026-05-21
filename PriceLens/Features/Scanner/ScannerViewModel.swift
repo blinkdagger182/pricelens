@@ -48,9 +48,9 @@ final class ScannerViewModel: ObservableObject {
     private var lastSubjectRects: [CGRect] = []
     private var stableSubjectFrames = 0
     private let primaryRepublishInterval: TimeInterval = 0.32
-    private let firstDetectionInterval: TimeInterval = 0.075
-    private let candidateTrackingInterval: TimeInterval = 0.10
-    private let stableTrackingInterval: TimeInterval = 0.20
+    private let firstDetectionInterval: TimeInterval = 0.18
+    private let candidateTrackingInterval: TimeInterval = 0.32
+    private let stableTrackingInterval: TimeInterval = 0.42
     private let instabilityResetDelay: TimeInterval = 0.32
 
     init() {
@@ -165,7 +165,7 @@ final class ScannerViewModel: ObservableObject {
         containerSize: CGSize
     ) {
         guard !candidates.isEmpty else { return }
-        let sequenceKey = candidates.map(primaryCandidateKey(for:)).joined(separator: "|")
+        let sequenceKey = candidates.map(revealCandidateKey(for:)).joined(separator: "|")
         guard sequenceKey != lastRevealSequenceKey else { return }
         lastRevealSequenceKey = sequenceKey
 
@@ -407,6 +407,10 @@ final class ScannerViewModel: ObservableObject {
         let bucketX = Int((candidate.bounds.midX / 40).rounded())
         let bucketY = Int((candidate.bounds.midY / 32).rounded())
         return "\(candidate.currencyCode)-\(candidate.amount)-\(bucketX)-\(bucketY)"
+    }
+
+    private func revealCandidateKey(for candidate: ParsedPriceCandidate) -> String {
+        "\(candidate.currencyCode)-\(candidate.amount)"
     }
 
     private func smoothedRect(from old: CGRect, to new: CGRect) -> CGRect {

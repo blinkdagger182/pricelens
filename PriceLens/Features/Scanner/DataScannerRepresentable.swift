@@ -107,6 +107,10 @@ struct DataScannerRepresentable: UIViewControllerRepresentable {
     final class Coordinator: NSObject, DataScannerViewControllerDelegate {
         var onRecognizedItems: ([(String, CGRect)]) -> Void
         weak var scanner: DataScannerViewController?
+        private var lastEmitAt = Date.distantPast
+        private var pendingRecognized: [(String, CGRect)] = []
+        private var scheduledEmit: DispatchWorkItem?
+        private let minimumEmitInterval: TimeInterval = 0.09
 
         init(onRecognizedItems: @escaping ([(String, CGRect)]) -> Void) {
             self.onRecognizedItems = onRecognizedItems
@@ -129,7 +133,31 @@ struct DataScannerRepresentable: UIViewControllerRepresentable {
                 guard case .text(let text) = item else { return nil }
                 return (text.transcript, Self.rect(from: item.bounds))
             }
-            DispatchQueue.main.async { self.onRecognizedItems(recognized) }
+            DispatchQueue.main.async { self.emitThrottled(recognized) }
+        }
+
+        private func emitThrottled(_ recognized: [(String, CGRect)]) {
+            pendingRecognized = recognized
+            let now = Date()
+            let elapsed = now.timeIntervalSince(lastEmitAt)
+            guard elapsed < minimumEmitInterval else {
+                scheduledEmit?.cancel()
+                scheduledEmit = nil
+                lastEmitAt = now
+                onRecognizedItems(recognized)
+                return
+            }
+
+            guard scheduledEmit == nil else { return }
+            let delay = minimumEmitInterval - elapsed
+            let work = DispatchWorkItem { [weak self] in
+                guard let self else { return }
+                self.lastEmitAt = Date()
+                self.scheduledEmit = nil
+                self.onRecognizedItems(self.pendingRecognized)
+            }
+            scheduledEmit = work
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
         }
 
         static func rect(from bounds: RecognizedItem.Bounds) -> CGRect {
