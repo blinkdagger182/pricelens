@@ -34,6 +34,8 @@ final class ScannerViewModel: ObservableObject {
     private var lastFoundCount = 0
     private var lastUsefulInputAt = Date.distantPast
     private var deferredCandidateTask: Task<Void, Never>?
+    private var pendingRevealCandidates: [ParsedPriceCandidate] = []
+    private var pendingRevealKeys: Set<String> = []
     private var processingGeneration = 0
     private var lastPrimaryCandidateKey: String?
     private var lastPrimaryPublishAt = Date.distantPast
@@ -42,6 +44,7 @@ final class ScannerViewModel: ObservableObject {
     private var overlayRevealTask: Task<Void, Never>?
     private var visibleOverlayIDs: [UUID] = []
     private var lastRevealSequenceKey: String?
+    private var lastSceneSignature: String?
     private let progressWindow = DetectionProgressWindow()
     private let motionManager = CMMotionManager()
     private var isDeviceStable = true
@@ -74,11 +77,14 @@ final class ScannerViewModel: ObservableObject {
         let now = Date()
 
         let fastCandidates = prioritizedCandidates(
-            recognized.flatMap { parser.fastParseNumeric(text: $0.0, bounds: $0.1, selectedTravelCurrency: travelCurrency) },
+            mergedCandidates(
+                recognized.flatMap { parser.fastParseNumeric(text: $0.0, bounds: $0.1, selectedTravelCurrency: travelCurrency) }
+            ),
             containerSize: containerSize
         )
         if !fastCandidates.isEmpty {
-            updateDetections(with: Array(fastCandidates.prefix(1)), at: now)
+            resetIfSceneChanged(for: fastCandidates)
+            updateDetections(with: Array(fastCandidates.prefix(5)), at: now)
             let publishedFastPrimary = publishPrimaryCandidateIfNeeded(
                 fastCandidates.first,
                 recognizedCount: recognized.count,
@@ -92,7 +98,7 @@ final class ScannerViewModel: ObservableObject {
                 fastCandidateCount: fastCandidates.count,
                 publishedPrimary: publishedFastPrimary
             )
-            scheduleSequentialReveal(
+            enqueueSequentialReveal(
                 candidates: Array(fastCandidates.dropFirst().prefix(4)),
                 recognizedCount: recognized.count,
                 homeCurrency: homeCurrency,
@@ -117,9 +123,8 @@ final class ScannerViewModel: ObservableObject {
         }
         lastProcess = now
 
-        let parseInputs = expandedReceiptContext(from: recognized)
-        let fullCandidates = parseInputs.flatMap { parser.parse(text: $0.0, bounds: $0.1, selectedTravelCurrency: travelCurrency) }
-        let candidates = prioritizedCandidates(mergedCandidates(fastCandidates + fullCandidates), containerSize: containerSize)
+        let candidates = fastCandidates
+        resetIfSceneChanged(for: candidates)
         progressWindow.record(recognizedCount: recognized.count, candidates: candidates, overlays: overlays, at: now)
         if !recognized.isEmpty || !candidates.isEmpty || !overlays.isEmpty {
             lastUsefulInputAt = now
@@ -147,37 +152,45 @@ final class ScannerViewModel: ObservableObject {
             publishImmediateOverlay(first, recognizedCount: recognized.count, homeCurrency: homeCurrency, containerSize: containerSize, at: now, isPrimary: true)
         }
 
-        if fastCandidates.count <= 1 {
-            let deferredCandidates = Array(remainingCandidates.dropFirst(didPublishPrimary ? 0 : 1))
-            scheduleSequentialReveal(
-                candidates: Array(deferredCandidates.prefix(4)),
-                recognizedCount: recognized.count,
-                homeCurrency: homeCurrency,
-                containerSize: containerSize
-            )
-        }
+        let deferredCandidates = Array(remainingCandidates.dropFirst(didPublishPrimary ? 0 : 1))
+        enqueueSequentialReveal(
+            candidates: Array(deferredCandidates.prefix(4)),
+            recognizedCount: recognized.count,
+            homeCurrency: homeCurrency,
+            containerSize: containerSize
+        )
     }
 
-    private func scheduleSequentialReveal(
+    private func enqueueSequentialReveal(
         candidates: [ParsedPriceCandidate],
         recognizedCount: Int,
         homeCurrency: String,
         containerSize: CGSize
     ) {
         guard !candidates.isEmpty else { return }
-        let sequenceKey = candidates.map(revealCandidateKey(for:)).joined(separator: "|")
-        guard sequenceKey != lastRevealSequenceKey else { return }
-        lastRevealSequenceKey = sequenceKey
+        let existingKeys = Set(overlays.map { revealOverlayKey(for: $0) })
+        for candidate in candidates {
+            let key = revealCandidateKey(for: candidate)
+            guard !existingKeys.contains(key), !pendingRevealKeys.contains(key) else { continue }
+            pendingRevealCandidates.append(candidate)
+            pendingRevealKeys.insert(key)
+        }
+        pendingRevealCandidates = Array(pendingRevealCandidates.prefix(4))
+        pendingRevealKeys = Set(pendingRevealCandidates.map { revealCandidateKey(for: $0) })
+        guard deferredCandidateTask == nil else { return }
 
-        processingGeneration += 1
-        deferredCandidateTask?.cancel()
-        let generation = processingGeneration
         deferredCandidateTask = Task { @MainActor [weak self] in
-            for candidate in candidates {
-                guard let self, !Task.isCancelled, self.processingGeneration == generation, !self.isFrozen else { return }
-                self.updateDetections(with: [candidate], at: Date())
+            while let self, !Task.isCancelled, !self.isFrozen {
+                guard !self.pendingRevealCandidates.isEmpty else {
+                    self.deferredCandidateTask = nil
+                    return
+                }
+                let candidate = self.pendingRevealCandidates.removeFirst()
+                let key = self.revealCandidateKey(for: candidate)
+                self.pendingRevealKeys.remove(key)
+                guard self.existingOverlayID(for: candidate) == nil else { continue }
                 try? await Task.sleep(for: .milliseconds(65))
-                guard !Task.isCancelled, self.processingGeneration == generation, !self.isFrozen else { return }
+                guard !Task.isCancelled, !self.isFrozen else { return }
                 self.publishImmediateOverlay(
                     candidate,
                     recognizedCount: recognizedCount,
@@ -188,7 +201,49 @@ final class ScannerViewModel: ObservableObject {
                 )
                 try? await Task.sleep(for: .milliseconds(70))
             }
+            self?.deferredCandidateTask = nil
         }
+    }
+
+    private func resetIfSceneChanged(for candidates: [ParsedPriceCandidate]) {
+        guard let primary = candidates.first else { return }
+        let signature = sceneSignature(for: primary)
+        guard let previous = lastSceneSignature else {
+            lastSceneSignature = signature
+            return
+        }
+        guard previous != signature else { return }
+
+        lastSceneSignature = signature
+        deferredCandidateTask?.cancel()
+        overlayRevealTask?.cancel()
+        pendingRevealCandidates = []
+        pendingRevealKeys = []
+        processingGeneration += 1
+        lastPrimaryCandidateKey = nil
+        lastPrimaryPublishAt = Date.distantPast
+        lastPrimaryOverlayID = nil
+        lastRevealSequenceKey = nil
+        visibleOverlayIDs = []
+        progressWindow.reset()
+        lastFoundCount = 0
+
+        var transaction = Transaction()
+        transaction.animation = nil
+        withTransaction(transaction) {
+            overlays = []
+            detections = []
+            scanProgress = 0
+            if state == .pricesDetected {
+                state = .scanning
+            }
+        }
+    }
+
+    private func sceneSignature(for candidate: ParsedPriceCandidate) -> String {
+        let bucketX = Int((candidate.bounds.midX / 120).rounded())
+        let bucketY = Int((candidate.bounds.midY / 96).rounded())
+        return "\(candidate.currencyCode)-\(candidate.amount)-\(bucketX)-\(bucketY)"
     }
 
     private func publishPrimaryCandidateIfNeeded(
@@ -410,7 +465,15 @@ final class ScannerViewModel: ObservableObject {
     }
 
     private func revealCandidateKey(for candidate: ParsedPriceCandidate) -> String {
-        "\(candidate.currencyCode)-\(candidate.amount)"
+        let bucketX = Int((candidate.bounds.midX / 56).rounded())
+        let bucketY = Int((candidate.bounds.midY / 40).rounded())
+        return "\(candidate.currencyCode)-\(candidate.amount)-\(bucketX)-\(bucketY)"
+    }
+
+    private func revealOverlayKey(for overlay: PriceOverlayItem) -> String {
+        let bucketX = Int((overlay.bounds.midX / 56).rounded())
+        let bucketY = Int((overlay.bounds.midY / 40).rounded())
+        return "\(overlay.sourceCurrencyCode)-\(overlay.amount)-\(bucketX)-\(bucketY)"
     }
 
     private func smoothedRect(from old: CGRect, to new: CGRect) -> CGRect {
@@ -589,6 +652,8 @@ final class ScannerViewModel: ObservableObject {
     private func resetDetectionState() {
         deferredCandidateTask?.cancel()
         overlayRevealTask?.cancel()
+        pendingRevealCandidates = []
+        pendingRevealKeys = []
         processingGeneration += 1
         progressWindow.reset()
         lastUsefulInputAt = Date.distantPast
@@ -596,6 +661,7 @@ final class ScannerViewModel: ObservableObject {
         lastPrimaryPublishAt = Date.distantPast
         lastPrimaryOverlayID = nil
         instabilityStartedAt = nil
+        lastSceneSignature = nil
         lastSubjectRects = []
         stableSubjectFrames = 0
         lastFoundCount = 0
