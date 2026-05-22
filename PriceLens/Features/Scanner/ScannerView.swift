@@ -1,3 +1,4 @@
+import AVFoundation
 import SwiftUI
 import UIKit
 
@@ -17,6 +18,7 @@ struct ScannerView: View {
     @State private var wasFrozenBeforeSnapPreview = false
     @State private var wasFrozenBeforeBlockingUI = false
     @State private var isBlockingUIPauseActive = false
+    @State private var isTorchOn = false
 
     private let bottomChromeHeight: CGFloat = 152
     private let cameraCornerRadius: CGFloat = 34
@@ -63,6 +65,9 @@ struct ScannerView: View {
             .onChange(of: showSettings) { _, _ in refreshBlockingUIPause() }
             .onChange(of: selectedCurrencyRole) { _, _ in refreshBlockingUIPause() }
             .onChange(of: fullPickerRole) { _, _ in refreshBlockingUIPause() }
+            .onDisappear {
+                setTorch(false)
+            }
         }
     }
 
@@ -166,7 +171,19 @@ struct ScannerView: View {
                 }
                 .buttonStyle(.plain)
                 Spacer()
-                Text("PriceLens").font(.headline.bold()).foregroundStyle(.white)
+                Button(action: swapCurrencies) {
+                    Image(systemName: "arrow.left.arrow.right")
+                        .font(.headline.bold())
+                        .foregroundStyle(AppTheme.accent)
+                        .frame(width: 46, height: 34)
+                        .background(.black.opacity(0.42), in: Capsule())
+                        .overlay(
+                            Capsule()
+                                .strokeBorder(AppTheme.accent.opacity(0.55), lineWidth: 1)
+                        )
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Swap currencies")
                 Spacer()
                 Button { toggleCurrencyPanel(.travel) } label: {
                     CurrencyPill(code: settings.travelCurrencyCode)
@@ -180,6 +197,15 @@ struct ScannerView: View {
                     Text("Fallback rates").font(.caption2.bold()).foregroundStyle(.black).padding(.horizontal, 9).padding(.vertical, 5).background(AppTheme.accent, in: Capsule())
                 }
                 Spacer()
+                Button { toggleTorch() } label: {
+                    Image(systemName: isTorchOn ? "bolt.fill" : "bolt.slash")
+                        .font(.headline)
+                        .foregroundStyle(isTorchOn ? AppTheme.accent : .white)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(isTorchOn ? "Turn flash off" : "Turn flash on")
                 Button { showSettings = true } label: {
                     Image(systemName: "gearshape")
                         .font(.headline)
@@ -190,6 +216,40 @@ struct ScannerView: View {
             }
             .padding(.horizontal, 18)
             Spacer()
+        }
+    }
+
+    private func swapCurrencies() {
+        settings.swapCurrencies()
+        viewModel.resetDetectionState()
+    }
+
+    private func toggleTorch() {
+        setTorch(!isTorchOn)
+    }
+
+    private func setTorch(_ enabled: Bool) {
+        guard let device = AVCaptureDevice.default(for: .video), device.hasTorch else {
+            isTorchOn = false
+            return
+        }
+
+        var didLock = false
+        do {
+            try device.lockForConfiguration()
+            didLock = true
+            if enabled {
+                try device.setTorchModeOn(level: AVCaptureDevice.maxAvailableTorchLevel)
+            } else {
+                device.torchMode = .off
+            }
+            device.unlockForConfiguration()
+            isTorchOn = enabled
+        } catch {
+            if didLock {
+                device.unlockForConfiguration()
+            }
+            isTorchOn = false
         }
     }
 

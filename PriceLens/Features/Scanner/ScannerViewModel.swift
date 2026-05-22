@@ -55,6 +55,8 @@ final class ScannerViewModel: ObservableObject {
     private let candidateTrackingInterval: TimeInterval = 0.32
     private let stableTrackingInterval: TimeInterval = 0.42
     private let instabilityResetDelay: TimeInterval = 0.32
+    private let liveOverlayGraceDuration: TimeInterval = 0.65
+    private let liveDetectionGraceDuration: TimeInterval = 0.45
 
     init() {
         usingFallbackRates = rateService.isUsingFallbackRates
@@ -94,6 +96,12 @@ final class ScannerViewModel: ObservableObject {
 
         if !fastCandidates.isEmpty {
             resetIfSceneChanged(for: fastCandidates)
+            deferredCandidateTask?.cancel()
+            overlayRevealTask?.cancel()
+            deferredCandidateTask = nil
+            overlayRevealTask = nil
+            pendingRevealCandidates = []
+            pendingRevealKeys = []
             updateDetections(with: Array(fastCandidates.prefix(5)), at: now)
             publishLiveCandidateBatch(
                 Array(fastCandidates.prefix(5)),
@@ -378,6 +386,7 @@ final class ScannerViewModel: ObservableObject {
             nextOverlays.append(overlay)
         }
 
+        nextOverlays = dedupedOverlays(nextOverlays)
         lastPrimaryOverlayID = nextOverlays.first?.id
         lastPrimaryCandidateKey = candidates.first.map { primaryCandidateKey(for: $0) }
         lastPrimaryPublishAt = date
@@ -401,10 +410,52 @@ final class ScannerViewModel: ObservableObject {
 
     private func existingOverlayID(for candidate: ParsedPriceCandidate) -> UUID? {
         overlays.first {
-            $0.amount == candidate.amount
-                && $0.sourceCurrencyCode == candidate.currencyCode
-                && hypot($0.bounds.midX - candidate.bounds.midX, $0.bounds.midY - candidate.bounds.midY) < 92
+            overlay($0, matches: candidate)
         }?.id
+    }
+
+    private func overlay(_ overlay: PriceOverlayItem, matches candidate: ParsedPriceCandidate) -> Bool {
+        guard overlay.sourceCurrencyCode == candidate.currencyCode else { return false }
+        let intersection = overlay.bounds.intersection(candidate.bounds)
+        let overlayArea = max(1, overlay.bounds.width * overlay.bounds.height)
+        let candidateArea = max(1, candidate.bounds.width * candidate.bounds.height)
+        let overlapRatio = intersection.isNull ? 0 : (intersection.width * intersection.height) / min(overlayArea, candidateArea)
+        let distance = hypot(overlay.bounds.midX - candidate.bounds.midX, overlay.bounds.midY - candidate.bounds.midY)
+        let closeDistance = max(80, min(150, max(overlay.bounds.height, candidate.bounds.height) * 2.6))
+        let sameAmount = overlay.amount == candidate.amount
+        return sameAmount && distance < closeDistance || overlapRatio > 0.30 || distance < closeDistance * 0.72
+    }
+
+    private func dedupedOverlays(_ overlays: [PriceOverlayItem]) -> [PriceOverlayItem] {
+        var result: [PriceOverlayItem] = []
+        for item in overlays {
+            if let index = result.firstIndex(where: { overlay($0, matchesPhysicalRegionOf: item) }) {
+                if overlayPriority(item) > overlayPriority(result[index]) {
+                    result[index] = item
+                }
+            } else {
+                result.append(item)
+            }
+        }
+        return Array(result.prefix(5))
+    }
+
+    private func overlay(_ lhs: PriceOverlayItem, matchesPhysicalRegionOf rhs: PriceOverlayItem) -> Bool {
+        guard lhs.sourceCurrencyCode == rhs.sourceCurrencyCode else { return false }
+        let intersection = lhs.bounds.intersection(rhs.bounds)
+        let lhsArea = max(1, lhs.bounds.width * lhs.bounds.height)
+        let rhsArea = max(1, rhs.bounds.width * rhs.bounds.height)
+        let overlapRatio = intersection.isNull ? 0 : (intersection.width * intersection.height) / min(lhsArea, rhsArea)
+        let distance = hypot(lhs.bounds.midX - rhs.bounds.midX, lhs.bounds.midY - rhs.bounds.midY)
+        let closeDistance = max(84, min(150, max(lhs.bounds.height, rhs.bounds.height) * 2.6))
+        let sameAmount = lhs.amount == rhs.amount
+        return sameAmount && distance < closeDistance || overlapRatio > 0.28 || distance < closeDistance * 0.66
+    }
+
+    private func overlayPriority(_ overlay: PriceOverlayItem) -> CGFloat {
+        overlay.bounds.width * overlay.bounds.height
+            + overlay.bounds.height * 240
+            + CGFloat(overlay.confidence * 1_000)
     }
 
     private func publish(candidates: [ParsedPriceCandidate], recognizedCount: Int, homeCurrency: String, containerSize: CGSize, at date: Date) {
@@ -482,16 +533,17 @@ final class ScannerViewModel: ObservableObject {
     }
 
     private func updateDetections(with candidates: [ParsedPriceCandidate], at date: Date) {
-        detections.removeAll { date.timeIntervalSince($0.lastSeenAt) > 0.9 }
-
+        var reconciled: [PriceDetectionItem] = []
         for candidate in candidates.prefix(5) {
             let id = detectionID(for: candidate)
-            if let index = detections.firstIndex(where: { $0.id == id }) {
-                detections[index].bounds = smoothedRect(from: detections[index].bounds, to: candidate.bounds)
-                detections[index].confidence = max(detections[index].confidence, candidate.confidence)
-                detections[index].lastSeenAt = date
+            if let index = detections.firstIndex(where: { detectionMatches($0, candidate) }) {
+                var detection = detections[index]
+                detection.bounds = smoothedRect(from: detection.bounds, to: candidate.bounds)
+                detection.confidence = max(detection.confidence, candidate.confidence)
+                detection.lastSeenAt = date
+                reconciled.append(detection)
             } else {
-                detections.append(
+                reconciled.append(
                     PriceDetectionItem(
                         id: id,
                         bounds: candidate.bounds,
@@ -503,7 +555,41 @@ final class ScannerViewModel: ObservableObject {
                 )
             }
         }
+        detections = dedupedDetections(reconciled)
         markConvertedDetections(for: overlays)
+    }
+
+    private func detectionMatches(_ detection: PriceDetectionItem, _ candidate: ParsedPriceCandidate) -> Bool {
+        let prefix = "\(candidate.currencyCode)-\(candidate.amount)-"
+        guard detection.id.hasPrefix(prefix) else { return false }
+        let intersects = !detection.bounds.intersection(candidate.bounds).isNull
+        let close = hypot(detection.bounds.midX - candidate.bounds.midX, detection.bounds.midY - candidate.bounds.midY) < 96
+        return intersects || close
+    }
+
+    private func dedupedDetections(_ detections: [PriceDetectionItem]) -> [PriceDetectionItem] {
+        var result: [PriceDetectionItem] = []
+        for detection in detections {
+            if let index = result.firstIndex(where: { existing in
+                existing.id == detection.id
+                    || (sameDetectionAmount(existing.id, detection.id)
+                        && hypot(existing.bounds.midX - detection.bounds.midX, existing.bounds.midY - detection.bounds.midY) < 96)
+            }) {
+                if detection.confidence >= result[index].confidence {
+                    result[index] = detection
+                }
+            } else {
+                result.append(detection)
+            }
+        }
+        return result
+    }
+
+    private func sameDetectionAmount(_ lhs: String, _ rhs: String) -> Bool {
+        let lhsParts = lhs.split(separator: "-")
+        let rhsParts = rhs.split(separator: "-")
+        guard lhsParts.count >= 2, rhsParts.count >= 2 else { return false }
+        return lhsParts[0] == rhsParts[0] && lhsParts[1] == rhsParts[1]
     }
 
     private func markConvertedDetections(for overlays: [PriceOverlayItem]) {
@@ -556,7 +642,7 @@ final class ScannerViewModel: ObservableObject {
         var result: [ParsedPriceCandidate] = []
         for candidate in candidates {
             if let index = result.firstIndex(where: { isSameCandidate($0, candidate) }) {
-                if candidate.confidence > result[index].confidence {
+                if candidatePriority(candidate) > candidatePriority(result[index]) {
                     result[index] = candidate
                 }
             } else {
@@ -571,10 +657,17 @@ final class ScannerViewModel: ObservableObject {
         let rhsArea = max(1, rhs.bounds.width * rhs.bounds.height)
         let intersection = lhs.bounds.intersection(rhs.bounds)
         let overlapRatio = intersection.isNull ? 0 : (intersection.width * intersection.height) / min(lhsArea, rhsArea)
-        let closeDistance = max(54, min(96, max(lhs.bounds.height, rhs.bounds.height) * 1.8))
-        return lhs.amount == rhs.amount
-            && lhs.currencyCode == rhs.currencyCode
-            && (overlapRatio > 0.34 || hypot(lhs.bounds.midX - rhs.bounds.midX, lhs.bounds.midY - rhs.bounds.midY) < closeDistance)
+        let distance = hypot(lhs.bounds.midX - rhs.bounds.midX, lhs.bounds.midY - rhs.bounds.midY)
+        let closeDistance = max(72, min(140, max(lhs.bounds.height, rhs.bounds.height) * 2.4))
+        let samePrice = lhs.amount == rhs.amount && lhs.currencyCode == rhs.currencyCode
+        let samePhysicalText = lhs.currencyCode == rhs.currencyCode && (overlapRatio > 0.42 || distance < closeDistance)
+        return samePrice && (overlapRatio > 0.18 || distance < closeDistance) || samePhysicalText
+    }
+
+    private func candidatePriority(_ candidate: ParsedPriceCandidate) -> CGFloat {
+        candidate.bounds.width * candidate.bounds.height
+            + candidate.bounds.height * 240
+            + CGFloat(candidate.confidence * 1_000)
     }
 
     private func expandedReceiptContext(from recognized: [(String, CGRect)]) -> [(String, CGRect)] {
@@ -716,7 +809,7 @@ final class ScannerViewModel: ObservableObject {
         resetDetectionState()
     }
 
-    private func resetDetectionState() {
+    func resetDetectionState() {
         deferredCandidateTask?.cancel()
         overlayRevealTask?.cancel()
         pendingRevealCandidates = []
@@ -747,15 +840,14 @@ final class ScannerViewModel: ObservableObject {
 
     func pruneStaleOverlays(homeCurrency: String, containerSize: CGSize) {
         let now = Date()
-        let active = stabilizer.update(candidates: [], targetCurrency: homeCurrency, converter: converter, containerSize: containerSize)
-        let visibleActive = queuedVisibleOverlays(from: active)
+        let visibleActive = overlays.filter { now.timeIntervalSince($0.lastSeenAt) <= liveOverlayGraceDuration }
         progressWindow.record(recognizedCount: 0, candidates: [], overlays: visibleActive, at: now)
         let hasRecentInput = now.timeIntervalSince(lastUsefulInputAt) < 1.1
         let nextProgress = hasRecentInput ? progressWindow.progress(currentProgress: scanProgress, at: now) : 0
         guard visibleActive != overlays || nextProgress != scanProgress else { return }
-        withAnimation(.easeOut(duration: active.isEmpty ? 0.28 : 0.16)) {
+        withAnimation(.easeOut(duration: visibleActive.isEmpty ? 0.16 : 0.10)) {
             overlays = visibleActive
-            detections.removeAll { now.timeIntervalSince($0.lastSeenAt) > 0.9 }
+            detections.removeAll { now.timeIntervalSince($0.lastSeenAt) > liveDetectionGraceDuration }
             markConvertedDetections(for: visibleActive)
             scanProgress = nextProgress
             if overlays.isEmpty, state == .pricesDetected {

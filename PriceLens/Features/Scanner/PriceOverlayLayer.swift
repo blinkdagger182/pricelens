@@ -25,7 +25,7 @@ struct PriceOverlayLayer: View {
     }
 
     private func layoutItems(in size: CGSize) -> [LaidOutPriceOverlay] {
-        let sorted = items.sorted { lhs, rhs in
+        let sorted = deduped(items).sorted { lhs, rhs in
             if lhs.confidence == rhs.confidence { return lhs.hitCount > rhs.hitCount }
             return lhs.confidence > rhs.confidence
         }
@@ -102,6 +102,37 @@ struct PriceOverlayLayer: View {
             guard rect.intersects(blocker) else { return score }
             return score + rect.intersection(blocker).width * rect.intersection(blocker).height
         }
+    }
+
+    private func deduped(_ items: [PriceOverlayItem]) -> [PriceOverlayItem] {
+        var result: [PriceOverlayItem] = []
+        for item in items {
+            if let index = result.firstIndex(where: { samePhysicalRegion($0, item) }) {
+                if priority(item) > priority(result[index]) {
+                    result[index] = item
+                }
+            } else {
+                result.append(item)
+            }
+        }
+        return result
+    }
+
+    private func samePhysicalRegion(_ lhs: PriceOverlayItem, _ rhs: PriceOverlayItem) -> Bool {
+        guard lhs.sourceCurrencyCode == rhs.sourceCurrencyCode else { return false }
+        let intersection = lhs.bounds.intersection(rhs.bounds)
+        let lhsArea = max(1, lhs.bounds.width * lhs.bounds.height)
+        let rhsArea = max(1, rhs.bounds.width * rhs.bounds.height)
+        let overlapRatio = intersection.isNull ? 0 : (intersection.width * intersection.height) / min(lhsArea, rhsArea)
+        let distance = hypot(lhs.bounds.midX - rhs.bounds.midX, lhs.bounds.midY - rhs.bounds.midY)
+        let closeDistance = max(84, min(150, max(lhs.bounds.height, rhs.bounds.height) * 2.6))
+        return lhs.amount == rhs.amount && distance < closeDistance || overlapRatio > 0.28 || distance < closeDistance * 0.66
+    }
+
+    private func priority(_ item: PriceOverlayItem) -> CGFloat {
+        item.bounds.width * item.bounds.height
+            + item.bounds.height * 240
+            + CGFloat(item.confidence * 1_000)
     }
 }
 

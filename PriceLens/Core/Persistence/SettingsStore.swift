@@ -35,6 +35,14 @@ final class SettingsStore: ObservableObject {
         addFavoriteCurrency(code)
     }
 
+    func swapCurrencies() {
+        let currentHome = homeCurrencyCode
+        homeCurrencyCode = travelCurrencyCode
+        travelCurrencyCode = currentHome
+        addFavoriteCurrency(homeCurrencyCode)
+        addFavoriteCurrency(travelCurrencyCode)
+    }
+
     func addFavoriteCurrency(_ code: String) {
         let normalized = code.uppercased()
         guard !favoriteCurrencyCodes.contains(normalized) else { return }
