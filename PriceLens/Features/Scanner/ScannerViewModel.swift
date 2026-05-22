@@ -82,37 +82,33 @@ final class ScannerViewModel: ObservableObject {
             ),
             containerSize: containerSize
         )
+
+        let subjectStable = isSubjectStable(recognized: recognized)
+        if !isDeviceStable || !subjectStable {
+            LiveScanDiagnostics.logStabilityBlocked(deviceStable: isDeviceStable, subjectStable: subjectStable, fastCandidateCount: fastCandidates.count)
+            noteInstability(at: now)
+            if fastCandidates.isEmpty { return }
+        } else {
+            instabilityStartedAt = nil
+        }
+
         if !fastCandidates.isEmpty {
             resetIfSceneChanged(for: fastCandidates)
             updateDetections(with: Array(fastCandidates.prefix(5)), at: now)
-            let publishedFastPrimary = publishPrimaryCandidateIfNeeded(
-                fastCandidates.first,
+            publishLiveCandidateBatch(
+                Array(fastCandidates.prefix(5)),
                 recognizedCount: recognized.count,
                 homeCurrency: homeCurrency,
                 containerSize: containerSize,
-                at: now,
-                force: force
+                at: now
             )
             LiveScanDiagnostics.logFastPath(
                 recognizedCount: recognized.count,
                 fastCandidateCount: fastCandidates.count,
-                publishedPrimary: publishedFastPrimary
+                publishedPrimary: true
             )
-            enqueueSequentialReveal(
-                candidates: Array(fastCandidates.dropFirst().prefix(4)),
-                recognizedCount: recognized.count,
-                homeCurrency: homeCurrency,
-                containerSize: containerSize
-            )
-        }
-
-        let subjectStable = isSubjectStable(recognized: recognized)
-        guard isDeviceStable, subjectStable else {
-            LiveScanDiagnostics.logStabilityBlocked(deviceStable: isDeviceStable, subjectStable: subjectStable, fastCandidateCount: fastCandidates.count)
-            noteInstability(at: now)
             return
         }
-        instabilityStartedAt = nil
 
         let throttle = processingInterval(hasCandidates: !fastCandidates.isEmpty)
         guard force || now.timeIntervalSince(lastProcess) > throttle else {
@@ -206,8 +202,7 @@ final class ScannerViewModel: ObservableObject {
     }
 
     private func resetIfSceneChanged(for candidates: [ParsedPriceCandidate]) {
-        guard let primary = candidates.first else { return }
-        let signature = sceneSignature(for: primary)
+        let signature = sceneSignature(for: candidates)
         guard let previous = lastSceneSignature else {
             lastSceneSignature = signature
             return
@@ -240,10 +235,16 @@ final class ScannerViewModel: ObservableObject {
         }
     }
 
-    private func sceneSignature(for candidate: ParsedPriceCandidate) -> String {
-        let bucketX = Int((candidate.bounds.midX / 120).rounded())
-        let bucketY = Int((candidate.bounds.midY / 96).rounded())
-        return "\(candidate.currencyCode)-\(candidate.amount)-\(bucketX)-\(bucketY)"
+    private func sceneSignature(for candidates: [ParsedPriceCandidate]) -> String {
+        candidates
+            .prefix(5)
+            .map { candidate in
+                let bucketX = Int((candidate.bounds.midX / 180).rounded())
+                let bucketY = Int((candidate.bounds.midY / 144).rounded())
+                return "\(candidate.currencyCode)-\(candidate.amount)-\(bucketX)-\(bucketY)"
+            }
+            .sorted()
+            .joined(separator: "|")
     }
 
     private func publishPrimaryCandidateIfNeeded(
@@ -261,6 +262,16 @@ final class ScannerViewModel: ObservableObject {
         }
         lastPrimaryCandidateKey = key
         lastPrimaryPublishAt = date
+        let shouldReusePrimaryID = lastPrimaryOverlayID.flatMap { existingID in
+            overlays.first(where: { $0.id == existingID }).map {
+                $0.amount == candidate.amount
+                    && $0.sourceCurrencyCode == candidate.currencyCode
+                    && hypot($0.bounds.midX - candidate.bounds.midX, $0.bounds.midY - candidate.bounds.midY) < 92
+            }
+        } ?? false
+        if !shouldReusePrimaryID {
+            lastPrimaryOverlayID = nil
+        }
         publishImmediateOverlay(candidate, recognizedCount: recognizedCount, homeCurrency: homeCurrency, containerSize: containerSize, at: date, isPrimary: true)
         return true
     }
@@ -335,6 +346,57 @@ final class ScannerViewModel: ObservableObject {
 
         _ = stabilizer.update(candidates: [candidate], targetCurrency: homeCurrency, converter: converter, containerSize: containerSize)
         LiveScanDiagnostics.logImmediateOverlay(isPrimary: isPrimary, duration: Date().timeIntervalSince(publishStart))
+    }
+
+    private func publishLiveCandidateBatch(
+        _ candidates: [ParsedPriceCandidate],
+        recognizedCount: Int,
+        homeCurrency: String,
+        containerSize: CGSize,
+        at date: Date
+    ) {
+        guard !candidates.isEmpty else { return }
+        let publishStart = Date()
+        var nextOverlays: [PriceOverlayItem] = []
+
+        for candidate in candidates.prefix(5) {
+            let existingID = existingOverlayID(for: candidate)
+            let convertedAmount = converter.convert(candidate.amount, from: candidate.currencyCode, to: homeCurrency)
+            let overlay = PriceOverlayItem(
+                id: existingID ?? UUID(),
+                originalText: candidate.originalText,
+                amount: candidate.amount,
+                sourceCurrencyCode: candidate.currencyCode,
+                targetCurrencyCode: homeCurrency,
+                convertedAmount: convertedAmount,
+                bounds: candidate.bounds,
+                displayPoint: CGPoint(x: candidate.bounds.midX, y: candidate.bounds.midY),
+                confidence: candidate.confidence,
+                lastSeenAt: date,
+                hitCount: max(overlays.first(where: { $0.id == existingID })?.hitCount ?? 0, 1)
+            )
+            nextOverlays.append(overlay)
+        }
+
+        lastPrimaryOverlayID = nextOverlays.first?.id
+        lastPrimaryCandidateKey = candidates.first.map { primaryCandidateKey(for: $0) }
+        lastPrimaryPublishAt = date
+        visibleOverlayIDs = nextOverlays.map(\.id)
+        progressWindow.record(recognizedCount: recognizedCount, candidates: candidates, overlays: nextOverlays, at: date)
+
+        var transaction = Transaction()
+        transaction.animation = overlays.isEmpty ? nil : .easeOut(duration: 0.08)
+        withTransaction(transaction) {
+            overlays = nextOverlays
+            state = .pricesDetected
+            scanProgress = max(scanProgress, 0.82)
+        }
+        markConvertedDetections(for: nextOverlays)
+        if lastFoundCount == 0 || nextOverlays.count > lastFoundCount { haptics.success() }
+        lastFoundCount = nextOverlays.count
+
+        _ = stabilizer.update(candidates: candidates, targetCurrency: homeCurrency, converter: converter, containerSize: containerSize)
+        LiveScanDiagnostics.logPublish(candidateCount: candidates.count, overlayCount: nextOverlays.count, duration: Date().timeIntervalSince(publishStart))
     }
 
     private func existingOverlayID(for candidate: ParsedPriceCandidate) -> UUID? {
@@ -505,9 +567,14 @@ final class ScannerViewModel: ObservableObject {
     }
 
     private func isSameCandidate(_ lhs: ParsedPriceCandidate, _ rhs: ParsedPriceCandidate) -> Bool {
-        lhs.amount == rhs.amount
+        let lhsArea = max(1, lhs.bounds.width * lhs.bounds.height)
+        let rhsArea = max(1, rhs.bounds.width * rhs.bounds.height)
+        let intersection = lhs.bounds.intersection(rhs.bounds)
+        let overlapRatio = intersection.isNull ? 0 : (intersection.width * intersection.height) / min(lhsArea, rhsArea)
+        let closeDistance = max(54, min(96, max(lhs.bounds.height, rhs.bounds.height) * 1.8))
+        return lhs.amount == rhs.amount
             && lhs.currencyCode == rhs.currencyCode
-            && hypot(lhs.bounds.midX - rhs.bounds.midX, lhs.bounds.midY - rhs.bounds.midY) < 46
+            && (overlapRatio > 0.34 || hypot(lhs.bounds.midX - rhs.bounds.midX, lhs.bounds.midY - rhs.bounds.midY) < closeDistance)
     }
 
     private func expandedReceiptContext(from recognized: [(String, CGRect)]) -> [(String, CGRect)] {
