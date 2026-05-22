@@ -1,5 +1,6 @@
 import Combine
 import Foundation
+import StoreKit
 
 final class SettingsStore: ObservableObject {
     @Published var hasCompletedOnboarding: Bool { didSet { defaults.set(hasCompletedOnboarding, forKey: AppStorageKeys.hasCompletedOnboarding) } }
@@ -63,6 +64,18 @@ final class SettingsStore: ObservableObject {
             if !(error is LocationCurrencyError) {
                 print("Could not detect travel currency from location: \(error.localizedDescription)")
             }
+        }
+    }
+
+    func updateHomeCurrencyFromStorefrontIfNeeded() async {
+        guard defaults.string(forKey: AppStorageKeys.homeCurrencyCode) == nil else { return }
+        guard let countryCode = await Storefront.current?.countryCode,
+              let currencyCode = Locale.currentCurrencyCode(forRegionCode: countryCode) else { return }
+
+        await MainActor.run {
+            guard self.defaults.string(forKey: AppStorageKeys.homeCurrencyCode) == nil else { return }
+            self.homeCurrencyCode = currencyCode
+            self.addFavoriteCurrency(currencyCode)
         }
     }
 

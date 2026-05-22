@@ -35,7 +35,7 @@ struct ScannerView: View {
             }
             .frame(width: proxy.size.width, height: proxy.size.height)
             .background(Color.black.ignoresSafeArea())
-            .sheet(item: $viewModel.selectedOverlay) { overlay in
+            .sheet(item: $viewModel.selectedOverlay, onDismiss: refreshBlockingUIPause) { overlay in
                 ScanResultDetailSheet(overlay: overlay) { history.add(viewModel.historyItem(from: overlay)) }
                     .presentationDetents([.medium])
                     .presentationDragIndicator(.visible)
@@ -65,6 +65,7 @@ struct ScannerView: View {
             .onChange(of: showSettings) { _, _ in refreshBlockingUIPause() }
             .onChange(of: selectedCurrencyRole) { _, _ in refreshBlockingUIPause() }
             .onChange(of: fullPickerRole) { _, _ in refreshBlockingUIPause() }
+            .onChange(of: viewModel.selectedOverlay) { _, _ in refreshBlockingUIPause() }
             .onDisappear {
                 setTorch(false)
             }
@@ -281,7 +282,7 @@ struct ScannerView: View {
 
     @MainActor
     private func refreshBlockingUIPause() {
-        let shouldPause = showSettings || selectedCurrencyRole != nil || fullPickerRole != nil
+        let shouldPause = showSettings || selectedCurrencyRole != nil || fullPickerRole != nil || viewModel.selectedOverlay != nil
         if shouldPause, !isBlockingUIPauseActive {
             wasFrozenBeforeBlockingUI = viewModel.isFrozen
             isBlockingUIPauseActive = true

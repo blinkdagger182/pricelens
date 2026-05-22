@@ -27,6 +27,8 @@ private struct RootView: View {
             }
         }
         .background(AppTheme.background.ignoresSafeArea())
+        .task {
+            await settings.updateHomeCurrencyFromStorefrontIfNeeded()
+        }
     }
 }
-
