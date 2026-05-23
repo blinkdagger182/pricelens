@@ -1,16 +1,26 @@
 import SwiftUI
+import RevenueCat
 
 @main
 struct PriceLensApp: App {
     @StateObject private var settings = SettingsStore()
     @StateObject private var history = ScanHistoryStore()
+    @StateObject private var subscription = SubscriptionStore()
+
+    init() {
+        SubscriptionStore.configureRevenueCat()
+    }
 
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environmentObject(settings)
                 .environmentObject(history)
+                .environmentObject(subscription)
                 .preferredColorScheme(.dark)
+                .task {
+                    subscription.start()
+                }
         }
     }
 }

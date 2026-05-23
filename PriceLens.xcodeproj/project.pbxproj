@@ -21,6 +21,7 @@
 		1F8A3F9A45FF0D52FC59A9B2 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DD790813A023E280CE76CDAC /* Assets.xcassets */; };
 		27602695509E06B42B022C8F /* OnboardingBagPropArt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EE99FD611514B70878EFD5E /* OnboardingBagPropArt.swift */; };
 		2874864287FDFDCF409DA11B /* CurrencyFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B87D7ECECCFBC3A33086CDBC /* CurrencyFormatter.swift */; };
+		2A3FCCE927EF53434B09844D /* RevenueCat in Frameworks */ = {isa = PBXBuildFile; productRef = 57447F2126A1B00307EA7353 /* RevenueCat */; };
 		2B0AF2A9E811CAD6943B60D8 /* CurrencyRateService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA5C783CDC5C053A2FE4AF44 /* CurrencyRateService.swift */; };
 		2EFC9491D915966FB0833110 /* iPhone17Pro.glb in Resources */ = {isa = PBXBuildFile; fileRef = 7526ADA64F3B0C2D5F7BB609 /* iPhone17Pro.glb */; };
 		330208BFF520091203BC9EBD /* ScanHistoryItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33DD5A3EB33E03E977183275 /* ScanHistoryItem.swift */; };
@@ -40,9 +41,11 @@
 		8FB2D89D98F924FEAD837BD1 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE6ABAB1DBBBF3C54A750D32 /* SettingsView.swift */; };
 		966A471C313D49400D54CF21 /* HapticsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C264E4D8C420C8CC6B4D79B /* HapticsService.swift */; };
 		98885BB77EF362AC0894F36C /* PriceOverlayItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBC153E03434EB80B6BFE2BC /* PriceOverlayItem.swift */; };
+		988AE836F934C97D5C255765 /* RevenueCatUI in Frameworks */ = {isa = PBXBuildFile; productRef = A9D0529F77EB2EE2388A95DA /* RevenueCatUI */; };
 		9A6718C5B27D33A810FA94AC /* OnboardingHeroView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF0935E16EB33733CA3D6F21 /* OnboardingHeroView.swift */; };
 		9FDBB0B8D332BB85C70812EF /* ManualConverterViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7192D23F9054BDBC419D1385 /* ManualConverterViewModel.swift */; };
 		A1B1CA14AB6588640EF4093A /* PriceOverlayLayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2691EB62D96E2D01C89B485F /* PriceOverlayLayer.swift */; };
+		A1D2C6A405E11997D82C8D41 /* SubscriptionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D7641F20F7ACE364CA4054E /* SubscriptionStore.swift */; };
 		A9D0C95A573EBDCF3E260D18 /* HistoryRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2D91B31F34B67D4B66AB1A0 /* HistoryRowView.swift */; };
 		ABB0BDB7673AFE6780E4F44F /* ManualConverterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 848B50188CDC5B3A2475A924 /* ManualConverterView.swift */; };
 		ADE059D017E1C18F049DA4CE /* ExchangeRate.swift in Sources */ = {isa = PBXBuildFile; fileRef = E166088308D8D380416131B1 /* ExchangeRate.swift */; };
@@ -96,6 +99,7 @@
 		33DD5A3EB33E03E977183275 /* ScanHistoryItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanHistoryItem.swift; sourceTree = "<group>"; };
 		380392ADFDF45B6470ED907D /* CurrencyPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrencyPickerView.swift; sourceTree = "<group>"; };
 		387D40C3560E13AA2CEC2B76 /* iPhone3DHeroSceneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iPhone3DHeroSceneView.swift; sourceTree = "<group>"; };
+		3D7641F20F7ACE364CA4054E /* SubscriptionStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SubscriptionStore.swift; sourceTree = "<group>"; };
 		3E1A058D2449BAD44AB54917 /* PrimaryButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrimaryButton.swift; sourceTree = "<group>"; };
 		41A2F4D8059B1605520290B1 /* AppStorageKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStorageKeys.swift; sourceTree = "<group>"; };
 		4BC18CF2F43969E5230A3F69 /* Color+Hex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Hex.swift"; sourceTree = "<group>"; };
@@ -155,6 +159,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				C434EB698AF0082A11063753 /* GLTFKit2.xcframework in Frameworks */,
+				2A3FCCE927EF53434B09844D /* RevenueCat in Frameworks */,
+				988AE836F934C97D5C255765 /* RevenueCatUI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -174,6 +180,7 @@
 				6050F01223D1106663C9207E /* OverlayStabilizer.swift */,
 				FE9C0AB6814D42F0ACD1137B /* PriceCandidatePrioritizer.swift */,
 				DDB9E9BE1EC2618074E6D190 /* PriceParser.swift */,
+				3D7641F20F7ACE364CA4054E /* SubscriptionStore.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -400,6 +407,8 @@
 			);
 			name = PriceLens;
 			packageProductDependencies = (
+				57447F2126A1B00307EA7353 /* RevenueCat */,
+				A9D0529F77EB2EE2388A95DA /* RevenueCatUI */,
 			);
 			productName = PriceLens;
 			productReference = 8E706249A2FB1960354C0EE2 /* PriceLens.app */;
@@ -423,6 +432,9 @@
 			);
 			mainGroup = 6EF56736F3D6148865B7C833;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				CADDD2F5E4692C35FFED43FA /* XCRemoteSwiftPackageReference "purchases-ios-spm" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 9D1E27536F2AEC0F9DE22A2A /* Products */;
 			projectDirPath = "";
@@ -529,6 +541,7 @@
 				E1D7D634F53B1713AC45AB53 /* TravelCurrencySelectionView.swift in Sources */,
 				C06A736BA037D1D9B6DD22EF /* View+Modifiers.swift in Sources */,
 				E02C06362E7522BDCB3CA9D0 /* iPhone3DHeroSceneView.swift in Sources */,
+				A1D2C6A405E11997D82C8D41 /* SubscriptionStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -732,6 +745,30 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		CADDD2F5E4692C35FFED43FA /* XCRemoteSwiftPackageReference "purchases-ios-spm" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/RevenueCat/purchases-ios-spm.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.16.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		57447F2126A1B00307EA7353 /* RevenueCat */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CADDD2F5E4692C35FFED43FA /* XCRemoteSwiftPackageReference "purchases-ios-spm" */;
+			productName = RevenueCat;
+		};
+		A9D0529F77EB2EE2388A95DA /* RevenueCatUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CADDD2F5E4692C35FFED43FA /* XCRemoteSwiftPackageReference "purchases-ios-spm" */;
+			productName = RevenueCatUI;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 99B1FD5EDC0333013D3722FF /* Project object */;
 }

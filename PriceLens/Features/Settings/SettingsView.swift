@@ -1,11 +1,15 @@
 import SwiftUI
+import RevenueCatUI
 
 struct SettingsView: View {
     @EnvironmentObject private var settings: SettingsStore
     @EnvironmentObject private var history: ScanHistoryStore
+    @EnvironmentObject private var subscription: SubscriptionStore
     @Environment(\.dismiss) private var dismiss
     @State private var rateStatus = CurrencyRateService.shared.statusSnapshot
     @State private var showHowToUse = false
+    @State private var showPaywall = false
+    @State private var showCustomerCenter = false
 
     var body: some View {
         NavigationStack {
@@ -16,6 +20,45 @@ struct SettingsView: View {
                     }
                     NavigationLink { CurrencyPickerView(title: "Travel Currency", selectedCode: $settings.travelCurrencyCode) } label: {
                         row("Travel currency", value: settings.travelCurrencyCode)
+                    }
+                }
+                Section("PriceLens Plus") {
+                    row("Subscription", value: subscriptionStatusText)
+                    Button {
+                        showPaywall = true
+                    } label: {
+                        Label("View plans", systemImage: "crown")
+                            .foregroundStyle(AppTheme.textPrimary)
+                    }
+                    .disabled(subscription.isLoading)
+
+                    Button {
+                        Task {
+                            await subscription.restorePurchases()
+                        }
+                    } label: {
+                        Label(subscription.isPurchasing ? "Restoring..." : "Restore purchases", systemImage: "arrow.clockwise")
+                            .foregroundStyle(AppTheme.textPrimary)
+                    }
+                    .disabled(subscription.isPurchasing)
+
+                    Button {
+                        showCustomerCenter = true
+                    } label: {
+                        Label("Manage subscription", systemImage: "person.crop.circle")
+                            .foregroundStyle(AppTheme.textPrimary)
+                    }
+
+                    if !subscription.hasConfiguredProducts {
+                        Text("No RevenueCat products are configured yet. Add products, an entitlement, and a current offering in RevenueCat before selling subscriptions.")
+                            .font(.footnote)
+                            .foregroundStyle(AppTheme.textSecondary)
+                    }
+
+                    if let errorMessage = subscription.errorMessage {
+                        Text(errorMessage)
+                            .font(.footnote)
+                            .foregroundStyle(.red)
                     }
                 }
                 Section("Rates") {
@@ -65,11 +108,33 @@ struct SettingsView: View {
                     .presentationDetents([.large])
                     .presentationDragIndicator(.visible)
             }
+            .sheet(isPresented: $showPaywall, onDismiss: {
+                Task {
+                    await subscription.refresh()
+                }
+            }) {
+                PaywallView(displayCloseButton: true)
+            }
+            .sheet(isPresented: $showCustomerCenter, onDismiss: {
+                Task {
+                    await subscription.refresh()
+                }
+            }) {
+                CustomerCenterView()
+            }
             .task {
                 await CurrencyRateService.shared.refreshIfNeeded()
                 rateStatus = CurrencyRateService.shared.statusSnapshot
+                subscription.start()
             }
         }
+    }
+
+    private var subscriptionStatusText: String {
+        if subscription.isLoading {
+            return "Checking..."
+        }
+        return subscription.isPro ? "Active" : "Not subscribed"
     }
 
     private var providerName: String {

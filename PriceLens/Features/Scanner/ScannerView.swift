@@ -19,6 +19,7 @@ struct ScannerView: View {
     @State private var wasFrozenBeforeBlockingUI = false
     @State private var isBlockingUIPauseActive = false
     @State private var isTorchOn = false
+    @State private var isTorchChanging = false
 
     private let bottomChromeHeight: CGFloat = 152
     private let cameraCornerRadius: CGFloat = 34
@@ -79,6 +80,12 @@ struct ScannerView: View {
                 scannerBackground(size: size)
                 PriceOverlayLayer(detections: viewModel.detections, items: viewModel.overlays, onTap: presentOverlayDetail)
                 topBar
+                if viewModel.shouldShowSnapHint {
+                    snapHint
+                        .padding(.bottom, 26)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                        .zIndex(5)
+                }
                 if isProcessingSnap {
                     SnapProcessingOverlay()
                         .zIndex(30)
@@ -196,6 +203,8 @@ struct ScannerView: View {
             HStack {
                 if viewModel.usingFallbackRates {
                     Text("Fallback rates").font(.caption2.bold()).foregroundStyle(.black).padding(.horizontal, 9).padding(.vertical, 5).background(AppTheme.accent, in: Capsule())
+                } else {
+                    Text(viewModel.rateTrustLabel).font(.caption2.bold()).foregroundStyle(AppTheme.accent).padding(.horizontal, 9).padding(.vertical, 5).background(.black.opacity(0.42), in: Capsule())
                 }
                 Spacer()
                 Button { toggleTorch() } label: {
@@ -206,6 +215,7 @@ struct ScannerView: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .disabled(isTorchChanging)
                 .accessibilityLabel(isTorchOn ? "Turn flash off" : "Turn flash on")
                 Button { showSettings = true } label: {
                     Image(systemName: "gearshape")
@@ -220,6 +230,26 @@ struct ScannerView: View {
         }
     }
 
+    private var snapHint: some View {
+        VStack {
+            Spacer()
+            Button(action: startSnap) {
+                HStack(spacing: 8) {
+                    Image(systemName: "viewfinder")
+                    Text("Snap for all prices")
+                }
+                .font(.caption.bold())
+                .foregroundStyle(.black)
+                .padding(.horizontal, 13)
+                .padding(.vertical, 8)
+                .background(AppTheme.accent, in: Capsule())
+                .shadow(color: AppTheme.accent.opacity(0.32), radius: 10)
+            }
+            .buttonStyle(.plain)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
     private func swapCurrencies() {
         settings.swapCurrencies()
         viewModel.resetDetectionState()
@@ -230,27 +260,37 @@ struct ScannerView: View {
     }
 
     private func setTorch(_ enabled: Bool) {
-        guard let device = AVCaptureDevice.default(for: .video), device.hasTorch else {
-            isTorchOn = false
-            return
-        }
+        guard !isTorchChanging else { return }
+        isTorchChanging = true
+        Task {
+            let changed = await Task.detached(priority: .userInitiated) {
+                guard let device = AVCaptureDevice.default(for: .video), device.hasTorch else {
+                    return false
+                }
 
-        var didLock = false
-        do {
-            try device.lockForConfiguration()
-            didLock = true
-            if enabled {
-                try device.setTorchModeOn(level: AVCaptureDevice.maxAvailableTorchLevel)
-            } else {
-                device.torchMode = .off
+                var didLock = false
+                do {
+                    try device.lockForConfiguration()
+                    didLock = true
+                    if enabled {
+                        try device.setTorchModeOn(level: min(0.75, AVCaptureDevice.maxAvailableTorchLevel))
+                    } else {
+                        device.torchMode = .off
+                    }
+                    device.unlockForConfiguration()
+                    return true
+                } catch {
+                    if didLock {
+                        device.unlockForConfiguration()
+                    }
+                    return false
+                }
+            }.value
+
+            await MainActor.run {
+                isTorchOn = changed ? enabled : false
+                isTorchChanging = false
             }
-            device.unlockForConfiguration()
-            isTorchOn = enabled
-        } catch {
-            if didLock {
-                device.unlockForConfiguration()
-            }
-            isTorchOn = false
         }
     }
 

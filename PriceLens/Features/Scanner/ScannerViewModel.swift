@@ -23,6 +23,8 @@ final class ScannerViewModel: ObservableObject {
     @Published var isFrozen = false
     @Published var usingFallbackRates = true
     @Published var scanProgress: CGFloat = 0
+    @Published var shouldShowSnapHint = false
+    @Published var rateTrustLabel = "Rates updated"
 
     private let parser = PriceParser()
     private let prioritizer = PriceCandidatePrioritizer()
@@ -62,6 +64,7 @@ final class ScannerViewModel: ObservableObject {
 
     init() {
         usingFallbackRates = rateService.isUsingFallbackRates
+        rateTrustLabel = Self.makeRateTrustLabel(from: rateService.statusSnapshot)
         startMotionMonitoring()
     }
 
@@ -74,11 +77,13 @@ final class ScannerViewModel: ObservableObject {
     func refreshRatesIfNeeded() async {
         await rateService.refreshIfNeeded()
         usingFallbackRates = rateService.isUsingFallbackRates
+        rateTrustLabel = Self.makeRateTrustLabel(from: rateService.statusSnapshot)
     }
 
     func process(recognized: [(String, CGRect)], travelCurrency: String, homeCurrency: String, containerSize: CGSize, force: Bool = false) {
         guard !isFrozen else { return }
         let now = Date()
+        shouldShowSnapHint = recognized.count >= 10
 
         let fastCandidates = prioritizedCandidates(
             mergedCandidates(
@@ -841,6 +846,7 @@ final class ScannerViewModel: ObservableObject {
         overlayRevealTask = nil
         withAnimation(.linear(duration: 0.06)) {
             scanProgress = 0
+            shouldShowSnapHint = false
             detections = []
             overlays = []
             if state == .pricesDetected {
@@ -861,6 +867,9 @@ final class ScannerViewModel: ObservableObject {
             detections.removeAll { now.timeIntervalSince($0.lastSeenAt) > liveDetectionGraceDuration }
             markConvertedDetections(for: visibleActive)
             scanProgress = nextProgress
+            if visibleActive.isEmpty && now.timeIntervalSince(lastUsefulInputAt) > 1.1 {
+                shouldShowSnapHint = false
+            }
             if overlays.isEmpty, state == .pricesDetected {
                 state = .scanning
             }
@@ -896,6 +905,17 @@ final class ScannerViewModel: ObservableObject {
             createdAt: Date(),
             note: nil
         )
+    }
+
+    private static func makeRateTrustLabel(from status: RateStatusSnapshot) -> String {
+        guard status.isOfficial else { return "Fallback rates" }
+        guard let updatedAt = status.updatedAt ?? status.fetchedAt else { return "Rates updated" }
+        if Calendar.current.isDateInToday(updatedAt) {
+            return "Rates updated today"
+        }
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .short
+        return "Rates updated \(formatter.localizedString(for: updatedAt, relativeTo: Date()))"
     }
 }
 
