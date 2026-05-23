@@ -77,7 +77,7 @@ struct ScannerView: View {
             let size = cameraProxy.size
             ZStack {
                 scannerBackground(size: size)
-                PriceOverlayLayer(detections: viewModel.detections, items: viewModel.overlays, onTap: viewModel.tap)
+                PriceOverlayLayer(detections: viewModel.detections, items: viewModel.overlays, onTap: presentOverlayDetail)
                 topBar
                 if isProcessingSnap {
                     SnapProcessingOverlay()
@@ -291,6 +291,16 @@ struct ScannerView: View {
             isBlockingUIPauseActive = false
             viewModel.isFrozen = wasFrozenBeforeBlockingUI
         }
+    }
+
+    @MainActor
+    private func presentOverlayDetail(_ overlay: PriceOverlayItem) {
+        if !isBlockingUIPauseActive {
+            wasFrozenBeforeBlockingUI = viewModel.isFrozen
+            isBlockingUIPauseActive = true
+        }
+        viewModel.isFrozen = true
+        viewModel.tap(overlay)
     }
 
     private func binding(for role: ScannerCurrencyRole) -> Binding<String> {

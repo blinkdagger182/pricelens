@@ -45,6 +45,7 @@ final class ScannerViewModel: ObservableObject {
     private var visibleOverlayIDs: [UUID] = []
     private var lastRevealSequenceKey: String?
     private var lastSceneSignature: String?
+    private var lastLiveBatchSignature: String?
     private let progressWindow = DetectionProgressWindow()
     private let motionManager = CMMotionManager()
     private var isDeviceStable = true
@@ -57,6 +58,7 @@ final class ScannerViewModel: ObservableObject {
     private let instabilityResetDelay: TimeInterval = 0.32
     private let liveOverlayGraceDuration: TimeInterval = 0.65
     private let liveDetectionGraceDuration: TimeInterval = 0.45
+    private let livePublishInterval: TimeInterval = 0.18
 
     init() {
         usingFallbackRates = rateService.isUsingFallbackRates
@@ -103,6 +105,13 @@ final class ScannerViewModel: ObservableObject {
             pendingRevealCandidates = []
             pendingRevealKeys = []
             updateDetections(with: Array(fastCandidates.prefix(5)), at: now)
+            let batchSignature = sceneSignature(for: Array(fastCandidates.prefix(5)))
+            guard force || overlays.isEmpty || batchSignature != lastLiveBatchSignature || now.timeIntervalSince(lastProcess) >= livePublishInterval else {
+                lastUsefulInputAt = now
+                return
+            }
+            lastProcess = now
+            lastLiveBatchSignature = batchSignature
             publishLiveCandidateBatch(
                 Array(fastCandidates.prefix(5)),
                 recognizedCount: recognized.count,
@@ -227,6 +236,7 @@ final class ScannerViewModel: ObservableObject {
         lastPrimaryPublishAt = Date.distantPast
         lastPrimaryOverlayID = nil
         lastRevealSequenceKey = nil
+        lastLiveBatchSignature = nil
         visibleOverlayIDs = []
         progressWindow.reset()
         lastFoundCount = 0
@@ -822,6 +832,7 @@ final class ScannerViewModel: ObservableObject {
         lastPrimaryOverlayID = nil
         instabilityStartedAt = nil
         lastSceneSignature = nil
+        lastLiveBatchSignature = nil
         lastSubjectRects = []
         stableSubjectFrames = 0
         lastFoundCount = 0
