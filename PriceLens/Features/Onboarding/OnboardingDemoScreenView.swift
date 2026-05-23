@@ -6,6 +6,7 @@ struct OnboardingDemoScreenView: View {
     var phaseProgress: Double
     var beamOffset: CGFloat
     var elapsed: TimeInterval
+    var conversion: OnboardingDemoConversion = .fallback
 
     private let cameraCorner: CGFloat = 34
     private let bottomChromeHeight: CGFloat = 152
@@ -13,8 +14,9 @@ struct OnboardingDemoScreenView: View {
     private let canvasH: CGFloat = 844
 
     private let itemName = "Travel Adapter"
-    private let yen = "¥12,800"
-    private let ringgit = "RM 398.40"
+    private var yen: String { conversion.sourceText }
+    private var convertedPrice: String { conversion.convertedText }
+    private var routeText: String { conversion.routeText }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -259,12 +261,14 @@ struct OnboardingDemoScreenView: View {
                             .foregroundStyle(.white)
                         Image(systemName: "arrow.right")
                             .foregroundStyle(AppTheme.accent)
-                        Text("RM 398")
+                        Text(convertedPrice)
                             .font(.headline.bold())
                             .monospacedDigit()
                             .foregroundStyle(AppTheme.accent)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.64)
                     }
-                    Text("Detected · JPY → MYR")
+                    Text("Detected · \(routeText)")
                         .font(.caption.bold())
                         .foregroundStyle(AppTheme.accent)
                 }
@@ -295,12 +299,14 @@ struct OnboardingDemoScreenView: View {
                     .foregroundStyle(.white)
                 Image(systemName: "arrow.right")
                     .foregroundStyle(AppTheme.accent)
-                Text("RM 398")
+                Text(convertedPrice)
                     .font(.headline.bold())
                     .monospacedDigit()
                     .foregroundStyle(AppTheme.accent)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.64)
             }
-            Text("Detected · JPY → MYR")
+            Text("Detected · \(routeText)")
                 .font(.caption.bold())
                 .foregroundStyle(AppTheme.accent)
         }
@@ -314,7 +320,7 @@ struct OnboardingDemoScreenView: View {
 
     private func emphasizedConversionCard(reveal: CGFloat) -> some View {
         let emphasis = smoothstep(0.24, 0.82, Double(reveal))
-        return OnboardingConversionCard(scale: 1, emphasis: emphasis)
+        return OnboardingConversionCard(scale: 1, emphasis: emphasis, conversion: conversion)
     }
 
     private var dashedHuntBox: some View {
@@ -387,12 +393,14 @@ struct OnboardingDemoScreenView: View {
                         .monospacedDigit()
                         .foregroundStyle(.white.opacity(0.92))
                     Divider().background(.white.opacity(0.14))
-                    Text(ringgit)
+                    Text(convertedPrice)
                         .font(.system(size: 42, weight: .heavy))
                         .monospacedDigit()
                         .foregroundStyle(AppTheme.accent)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.62)
                         .shadow(color: AppTheme.accent.opacity(0.35), radius: 16, y: 2)
-                    Text("JPY → MYR · overlay anchored to tag")
+                    Text("\(routeText) · overlay anchored to tag")
                         .font(.caption.bold())
                         .foregroundStyle(AppTheme.textSecondary)
                 }
@@ -422,12 +430,14 @@ struct OnboardingDemoScreenView: View {
                 .monospacedDigit()
                 .foregroundStyle(.white.opacity(0.92))
             Divider().background(.white.opacity(0.14))
-            Text(ringgit)
+            Text(convertedPrice)
                 .font(.system(size: 42, weight: .heavy))
                 .monospacedDigit()
                 .foregroundStyle(AppTheme.accent)
+                .lineLimit(1)
+                .minimumScaleFactor(0.62)
                 .shadow(color: AppTheme.accent.opacity(0.35), radius: 16, y: 2)
-            Text("JPY → MYR · overlay anchored to tag")
+            Text("\(routeText) · overlay anchored to tag")
                 .font(.caption.bold())
                 .foregroundStyle(AppTheme.textSecondary)
         }
@@ -443,7 +453,7 @@ struct OnboardingDemoScreenView: View {
     private var topChrome: some View {
         VStack(alignment: .leading, spacing: 7) {
             HStack {
-                CurrencyPill(code: "MYR").scaleEffect(0.92)
+                CurrencyPill(code: conversion.targetCode).scaleEffect(0.92)
                 Spacer()
                 Text("PriceLens").font(.headline.bold()).foregroundStyle(.white)
                 Spacer()

@@ -27,6 +27,7 @@
 		330208BFF520091203BC9EBD /* ScanHistoryItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33DD5A3EB33E03E977183275 /* ScanHistoryItem.swift */; };
 		37E0C87B95B126A31E639601 /* CurrencyPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 380392ADFDF45B6470ED907D /* CurrencyPickerView.swift */; };
 		3A0E853081C9C7C18BC1CADE /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = E267C44A4A398A87F534BB5F /* AppSettings.swift */; };
+		3AA2AA01C12B82F838B83AE1 /* PriceLensPaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5E01BEAA498AB7A26DD6832 /* PriceLensPaywallView.swift */; };
 		3F136AF39FDA0FBDFC3A94A0 /* ConversionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5F4DAB24B9E7D57869B897E /* ConversionEngine.swift */; };
 		44A95BBD916A960934F34B9E /* CurrencyFlagView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4D7D300386732AD92337A5F /* CurrencyFlagView.swift */; };
 		57A2E9B2EF37162347A2C4E8 /* AppStorageKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41A2F4D8059B1605520290B1 /* AppStorageKeys.swift */; };
@@ -46,6 +47,7 @@
 		9FDBB0B8D332BB85C70812EF /* ManualConverterViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7192D23F9054BDBC419D1385 /* ManualConverterViewModel.swift */; };
 		A1B1CA14AB6588640EF4093A /* PriceOverlayLayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2691EB62D96E2D01C89B485F /* PriceOverlayLayer.swift */; };
 		A1D2C6A405E11997D82C8D41 /* SubscriptionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D7641F20F7ACE364CA4054E /* SubscriptionStore.swift */; };
+		A82E9350CB87452A54533940 /* OnboardingSurveyQuestionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC0E384EBB4BEE5539C9A689 /* OnboardingSurveyQuestionView.swift */; };
 		A9D0C95A573EBDCF3E260D18 /* HistoryRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2D91B31F34B67D4B66AB1A0 /* HistoryRowView.swift */; };
 		ABB0BDB7673AFE6780E4F44F /* ManualConverterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 848B50188CDC5B3A2475A924 /* ManualConverterView.swift */; };
 		ADE059D017E1C18F049DA4CE /* ExchangeRate.swift in Sources */ = {isa = PBXBuildFile; fileRef = E166088308D8D380416131B1 /* ExchangeRate.swift */; };
@@ -59,6 +61,8 @@
 		C06C224328465C97B08BC800 /* GLTFKit2.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = CA2986B3ECB7708F208B7CD2 /* GLTFKit2.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		C106F67D2641A480864A5F63 /* BackendRateClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 841BB2A5A5318EB60DC974AF /* BackendRateClient.swift */; };
 		C1152E78F339C6E1BA7A4D4A /* PriceLensApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 129425D08EC63D3BFFE08FA3 /* PriceLensApp.swift */; };
+		C3A6EA6F7D4CFEF09B380122 /* OnboardingCurrencyGlobeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 921D42DC6F37AF1BBD45D660 /* OnboardingCurrencyGlobeView.swift */; };
+		C408CD26208525AA1B9D8FC6 /* RatesSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCC0AF5AD5AEEEAC861330B0 /* RatesSheetView.swift */; };
 		C434EB698AF0082A11063753 /* GLTFKit2.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = CA2986B3ECB7708F208B7CD2 /* GLTFKit2.xcframework */; };
 		C7E90B0FF01AA71226B47D9D /* HomeCurrencySelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1828480853120E5C573F38E /* HomeCurrencySelectionView.swift */; };
 		C8FDB067D8741FCDFC793DC7 /* LocationCurrencyService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 881F2CAC126C8DC5811F6BD5 /* LocationCurrencyService.swift */; };
@@ -69,6 +73,7 @@
 		E36219B021C7D4E1AF7D34DC /* ErrorStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 694F1E4C7724060B1A21A0ED /* ErrorStateView.swift */; };
 		EF467938FA44685712D3FFF8 /* OCRSnapshotService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6236DBF3C08DAFA79259AE1A /* OCRSnapshotService.swift */; };
 		F1FE502DA8583205EFA5D24F /* PriceOverlayCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C5954F3B97715987439136E /* PriceOverlayCard.swift */; };
+		FC587E8A2FC1F2FE00DC60AE /* OnboardingDemoConversion.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC587E892FC1F2FE00DC60AE /* OnboardingDemoConversion.swift */; };
 		FE166B1A08DA52C83EF1D552 /* DetectedPrice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 709C0F9E8D618ACEF71EF1FB /* DetectedPrice.swift */; };
 		FE9C0AB7814D42F0ACD1137B /* PriceCandidatePrioritizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE9C0AB6814D42F0ACD1137B /* PriceCandidatePrioritizer.swift */; };
 /* End PBXBuildFile section */
@@ -127,6 +132,7 @@
 		8D24B727FB0F34D5CC838F8D /* ScannerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScannerViewModel.swift; sourceTree = "<group>"; };
 		8E706249A2FB1960354C0EE2 /* PriceLens.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PriceLens.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8EE99FD611514B70878EFD5E /* OnboardingBagPropArt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingBagPropArt.swift; sourceTree = "<group>"; };
+		921D42DC6F37AF1BBD45D660 /* OnboardingCurrencyGlobeView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingCurrencyGlobeView.swift; sourceTree = "<group>"; };
 		923FA9533B06C6646BD731E2 /* ScannerControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScannerControlsView.swift; sourceTree = "<group>"; };
 		97F94D285DC5214B823D093F /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
 		A278F3C8037E85FE0C8B5A8B /* OnboardingTagTexture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingTagTexture.swift; sourceTree = "<group>"; };
@@ -139,16 +145,20 @@
 		CFAE5BFEA6CB71C63B90F596 /* HistoryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryViewModel.swift; sourceTree = "<group>"; };
 		D0D33645B394EDA9876183E9 /* Currency.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Currency.swift; sourceTree = "<group>"; };
 		D7CA8516FB6D1CED72CD8641 /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
+		DC0E384EBB4BEE5539C9A689 /* OnboardingSurveyQuestionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingSurveyQuestionView.swift; sourceTree = "<group>"; };
 		DD790813A023E280CE76CDAC /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		DDB9E9BE1EC2618074E6D190 /* PriceParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PriceParser.swift; sourceTree = "<group>"; };
 		E0CF31E9170A5083A9102138 /* OnboardingHeroTiming.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingHeroTiming.swift; sourceTree = "<group>"; };
 		E166088308D8D380416131B1 /* ExchangeRate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExchangeRate.swift; sourceTree = "<group>"; };
 		E1828480853120E5C573F38E /* HomeCurrencySelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeCurrencySelectionView.swift; sourceTree = "<group>"; };
 		E267C44A4A398A87F534BB5F /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
+		E5E01BEAA498AB7A26DD6832 /* PriceLensPaywallView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PriceLensPaywallView.swift; sourceTree = "<group>"; };
 		E73D20532BA32EF5632CE9F3 /* OnboardingDemoScreenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingDemoScreenView.swift; sourceTree = "<group>"; };
 		EBC153E03434EB80B6BFE2BC /* PriceOverlayItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PriceOverlayItem.swift; sourceTree = "<group>"; };
 		EF419D485A90936C57E1BDB4 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		F5F4DAB24B9E7D57869B897E /* ConversionEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversionEngine.swift; sourceTree = "<group>"; };
+		FC587E892FC1F2FE00DC60AE /* OnboardingDemoConversion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingDemoConversion.swift; sourceTree = "<group>"; };
+		FCC0AF5AD5AEEEAC861330B0 /* RatesSheetView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RatesSheetView.swift; sourceTree = "<group>"; };
 		FE9C0AB6814D42F0ACD1137B /* PriceCandidatePrioritizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PriceCandidatePrioritizer.swift; sourceTree = "<group>"; };
 		FF0935E16EB33733CA3D6F21 /* OnboardingHeroView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingHeroView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -212,6 +222,7 @@
 				694F1E4C7724060B1A21A0ED /* ErrorStateView.swift */,
 				7CFB7E7BCBF23022EF7FB8E4 /* GlassCard.swift */,
 				3E1A058D2449BAD44AB54917 /* PrimaryButton.swift */,
+				E5E01BEAA498AB7A26DD6832 /* PriceLensPaywallView.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -244,6 +255,7 @@
 		33E4EB6C11D51E288C520418 /* Onboarding */ = {
 			isa = PBXGroup;
 			children = (
+				FC587E892FC1F2FE00DC60AE /* OnboardingDemoConversion.swift */,
 				E1828480853120E5C573F38E /* HomeCurrencySelectionView.swift */,
 				387D40C3560E13AA2CEC2B76 /* iPhone3DHeroSceneView.swift */,
 				8EE99FD611514B70878EFD5E /* OnboardingBagPropArt.swift */,
@@ -255,6 +267,8 @@
 				A278F3C8037E85FE0C8B5A8B /* OnboardingTagTexture.swift */,
 				2122ACCC4B020F197397EF64 /* OnboardingView.swift */,
 				78A5F345BB3A4E029E2BFF11 /* TravelCurrencySelectionView.swift */,
+				DC0E384EBB4BEE5539C9A689 /* OnboardingSurveyQuestionView.swift */,
+				921D42DC6F37AF1BBD45D660 /* OnboardingCurrencyGlobeView.swift */,
 			);
 			path = Onboarding;
 			sourceTree = "<group>";
@@ -371,6 +385,7 @@
 			children = (
 				380392ADFDF45B6470ED907D /* CurrencyPickerView.swift */,
 				AE6ABAB1DBBBF3C54A750D32 /* SettingsView.swift */,
+				FCC0AF5AD5AEEEAC861330B0 /* RatesSheetView.swift */,
 			);
 			path = Settings;
 			sourceTree = "<group>";
@@ -537,11 +552,16 @@
 				AF2C25767AB3CBB9FF6C09FF /* ScannerViewModel.swift in Sources */,
 				0B4CAAB79B14E101744D2E0B /* SettingsStore.swift in Sources */,
 				8FB2D89D98F924FEAD837BD1 /* SettingsView.swift in Sources */,
+				FC587E8A2FC1F2FE00DC60AE /* OnboardingDemoConversion.swift in Sources */,
 				1506919165C2B6B5864E509D /* String+PriceParsing.swift in Sources */,
 				E1D7D634F53B1713AC45AB53 /* TravelCurrencySelectionView.swift in Sources */,
 				C06A736BA037D1D9B6DD22EF /* View+Modifiers.swift in Sources */,
 				E02C06362E7522BDCB3CA9D0 /* iPhone3DHeroSceneView.swift in Sources */,
 				A1D2C6A405E11997D82C8D41 /* SubscriptionStore.swift in Sources */,
+				3AA2AA01C12B82F838B83AE1 /* PriceLensPaywallView.swift in Sources */,
+				C408CD26208525AA1B9D8FC6 /* RatesSheetView.swift in Sources */,
+				A82E9350CB87452A54533940 /* OnboardingSurveyQuestionView.swift in Sources */,
+				C3A6EA6F7D4CFEF09B380122 /* OnboardingCurrencyGlobeView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

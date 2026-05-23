@@ -4,6 +4,7 @@ struct OnboardingHeroView: View {
     @State private var glowPhase = false
     @State private var isActive = true
     @State private var animationStartTime = ProcessInfo.processInfo.systemUptime
+    @State private var demoConversion = OnboardingDemoConversion.fallback
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { _ in
@@ -26,7 +27,7 @@ struct OnboardingHeroView: View {
                 ZStack {
                     ambientGlow
                     if isActive {
-                        iPhone3DHeroSceneView()
+                        iPhone3DHeroSceneView(conversion: demoConversion)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .opacity(phoneAlpha)
                     }
@@ -48,6 +49,9 @@ struct OnboardingHeroView: View {
             withAnimation(.easeInOut(duration: 2.4).repeatForever(autoreverses: true)) {
                 glowPhase = true
             }
+        }
+        .task {
+            demoConversion = await OnboardingDemoConversion.current()
         }
         .onDisappear {
             isActive = false
@@ -104,7 +108,7 @@ struct OnboardingHeroView: View {
     }
 
     private func standaloneConversionCard() -> some View {
-        OnboardingConversionCard(scale: 1.18, emphasis: 1)
+        OnboardingConversionCard(scale: 1.18, emphasis: 1, conversion: demoConversion)
     }
 
     private func smoothstep(_ edge0: Double, _ edge1: Double, _ value: Double) -> CGFloat {

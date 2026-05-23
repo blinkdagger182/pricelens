@@ -113,7 +113,7 @@ struct SettingsView: View {
                     await subscription.refresh()
                 }
             }) {
-                PaywallView(displayCloseButton: true)
+                PriceLensPaywallView()
             }
             .sheet(isPresented: $showCustomerCenter, onDismiss: {
                 Task {

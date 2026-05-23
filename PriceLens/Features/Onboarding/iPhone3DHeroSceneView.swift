@@ -6,6 +6,8 @@ import UIKit
 
 /// 3D story: illustrated bag prop → phone scans → phone scales up with conversion UI on glass.
 struct iPhone3DHeroSceneView: UIViewRepresentable {
+    var conversion: OnboardingDemoConversion = .fallback
+
     func makeUIView(context: Context) -> SCNView {
         let view = SCNView()
         view.backgroundColor = .clear
@@ -16,13 +18,16 @@ struct iPhone3DHeroSceneView: UIViewRepresentable {
         view.preferredFramesPerSecond = 60
         view.scene = SCNScene()
         context.coordinator.attach(to: view)
+        context.coordinator.conversion = conversion
         context.coordinator.buildBagProp()
         context.coordinator.loadModelIfNeeded()
         context.coordinator.startDisplayLink()
         return view
     }
 
-    func updateUIView(_ uiView: SCNView, context: Context) {}
+    func updateUIView(_ uiView: SCNView, context: Context) {
+        context.coordinator.conversion = conversion
+    }
 
     static func dismantleUIView(_ uiView: SCNView, coordinator: Coordinator) {
         coordinator.stopDisplayLink()
@@ -86,6 +91,7 @@ struct iPhone3DHeroSceneView: UIViewRepresentable {
         private var animationStartTime: CFTimeInterval = 0
         private var lastTextureTime: CFTimeInterval = 0
         private let textureMinInterval: CFTimeInterval = 1.0 / 30.0
+        var conversion: OnboardingDemoConversion = .fallback
 
         private let layoutEstablish = WorldLayout(
             cameraPosition: SCNVector3(-0.006, 0.038, 0.356),
@@ -312,7 +318,8 @@ struct iPhone3DHeroSceneView: UIViewRepresentable {
                     beamOffset: beamY,
                     phase: coarse,
                     phaseProgress: local,
-                    elapsed: t
+                    elapsed: t,
+                    conversion: conversion
                 )
                 updateScreenTexture(image)
                 pulseRimLight(elapsed: t)
@@ -498,7 +505,8 @@ struct iPhone3DHeroSceneView: UIViewRepresentable {
                     beamOffset: beamY,
                     phase: coarse,
                     phaseProgress: local,
-                    elapsed: t
+                    elapsed: t,
+                    conversion: conversion
                 )
                 updateScreenTexture(image)
             }

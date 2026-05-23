@@ -3,6 +3,7 @@ import SwiftUI
 struct OnboardingConversionCard: View {
     var scale: CGFloat = 1
     var emphasis: CGFloat = 1
+    var conversion: OnboardingDemoConversion = .fallback
 
     var body: some View {
         let width = 286 * scale
@@ -20,17 +21,19 @@ struct OnboardingConversionCard: View {
                     .frame(width: 8 * scale, height: 8 * scale)
                     .shadow(color: AppTheme.accent.opacity(glow), radius: 8 * scale)
             }
-            Text("¥12,800")
+            Text(conversion.sourceText)
                 .font(.system(size: 23 * scale, weight: .bold))
                 .monospacedDigit()
                 .foregroundStyle(.white.opacity(0.92))
             Divider()
                 .background(.white.opacity(0.14))
                 .scaleEffect(x: lerp(0.78, 1, emphasis), anchor: .leading)
-            Text("RM 398.40")
+            Text(conversion.convertedText)
                 .font(.system(size: 34 * scale, weight: .heavy))
                 .monospacedDigit()
                 .foregroundStyle(AppTheme.accent)
+                .lineLimit(1)
+                .minimumScaleFactor(0.68)
                 .shadow(color: AppTheme.accent.opacity(glow), radius: lerp(12, 24, emphasis) * scale, y: 2)
                 .overlay(alignment: .bottom) {
                     Rectangle()
@@ -38,9 +41,11 @@ struct OnboardingConversionCard: View {
                         .frame(height: 8 * scale)
                         .offset(y: -4 * scale)
                 }
-            Text("Detected price · JPY → MYR")
+            Text("Detected price · \(conversion.routeText)")
                 .font(.system(size: 12 * scale, weight: .bold))
                 .foregroundStyle(AppTheme.accent)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
         }
         .padding(.horizontal, 16 * scale)
         .padding(.vertical, 14 * scale)

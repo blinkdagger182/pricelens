@@ -11,13 +11,15 @@ enum OnboardingScreenTexture {
         beamOffset: CGFloat,
         phase: OnboardingHeroStoryPhase,
         phaseProgress: Double,
-        elapsed: TimeInterval
+        elapsed: TimeInterval,
+        conversion: OnboardingDemoConversion = .fallback
     ) -> UIImage {
         let content = OnboardingDemoScreenView(
             phase: phase,
             phaseProgress: phaseProgress,
             beamOffset: beamOffset,
-            elapsed: elapsed
+            elapsed: elapsed,
+            conversion: conversion
         )
         .frame(width: canvas.width, height: canvas.height)
         .background(Color.black)

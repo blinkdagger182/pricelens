@@ -1,10 +1,70 @@
 import AVFoundation
 import SwiftUI
 import UIKit
+import RevenueCatUI
+
+private enum SnapFlashMode: CaseIterable {
+    case auto
+    case on
+    case off
+
+    var next: SnapFlashMode {
+        switch self {
+        case .auto: return .on
+        case .on: return .off
+        case .off: return .auto
+        }
+    }
+
+    var iconName: String {
+        switch self {
+        case .auto: return "bolt.badge.a.fill"
+        case .on: return "bolt.fill"
+        case .off: return "bolt.slash"
+        }
+    }
+
+    var accessibilityName: String {
+        switch self {
+        case .auto: return "auto"
+        case .on: return "on"
+        case .off: return "off"
+        }
+    }
+}
+
+private struct UpgradeIndicatorPill: View {
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "sparkles")
+                .font(.caption.bold())
+            Text("Plus")
+                .font(.caption.bold())
+        }
+        .foregroundStyle(.black)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+        .background(
+            LinearGradient(
+                colors: [AppTheme.accent, Color.white.opacity(0.92)],
+                startPoint: .leading,
+                endPoint: .trailing
+            ),
+            in: Capsule()
+        )
+        .overlay(
+            Capsule()
+                .strokeBorder(Color.white.opacity(0.32), lineWidth: 1)
+        )
+        .shadow(color: AppTheme.accent.opacity(0.38), radius: 12, y: 4)
+        .accessibilityLabel("Upgrade to PriceLens Plus")
+    }
+}
 
 struct ScannerView: View {
     @EnvironmentObject private var settings: SettingsStore
     @EnvironmentObject private var history: ScanHistoryStore
+    @EnvironmentObject private var subscription: SubscriptionStore
     @StateObject private var viewModel = ScannerViewModel()
     @State private var showHistory = false
     @State private var showManual = false
@@ -18,8 +78,9 @@ struct ScannerView: View {
     @State private var wasFrozenBeforeSnapPreview = false
     @State private var wasFrozenBeforeBlockingUI = false
     @State private var isBlockingUIPauseActive = false
-    @State private var isTorchOn = false
-    @State private var isTorchChanging = false
+    @State private var snapFlashMode: SnapFlashMode = .auto
+    @State private var showUpgradePaywall = false
+    @State private var showRatesSheet = false
 
     private let bottomChromeHeight: CGFloat = 152
     private let cameraCornerRadius: CGFloat = 34
@@ -44,6 +105,19 @@ struct ScannerView: View {
             .sheet(isPresented: $showHistory) { HistoryView() }
             .sheet(isPresented: $showManual) { ManualConverterView() }
             .sheet(isPresented: $showSettings, onDismiss: refreshBlockingUIPause) { SettingsView() }
+            .sheet(isPresented: $showRatesSheet, onDismiss: refreshBlockingUIPause) {
+                RatesSheetView()
+                    .presentationDetents([.large])
+                    .presentationDragIndicator(.visible)
+            }
+            .sheet(isPresented: $showUpgradePaywall, onDismiss: {
+                refreshBlockingUIPause()
+                Task {
+                    await subscription.refresh()
+                }
+            }) {
+                PriceLensPaywallView()
+            }
             .sheet(item: $snapshotPreview, onDismiss: resumeLiveDetectionAfterSnap) { snapshot in
                 ScannerSnapshotPreview(snapshot: snapshot)
                     .presentationDetents([.large])
@@ -64,12 +138,11 @@ struct ScannerView: View {
                 await settings.updateTravelCurrencyFromCurrentLocationIfNeeded()
             }
             .onChange(of: showSettings) { _, _ in refreshBlockingUIPause() }
+            .onChange(of: showRatesSheet) { _, _ in refreshBlockingUIPause() }
+            .onChange(of: showUpgradePaywall) { _, _ in refreshBlockingUIPause() }
             .onChange(of: selectedCurrencyRole) { _, _ in refreshBlockingUIPause() }
             .onChange(of: fullPickerRole) { _, _ in refreshBlockingUIPause() }
             .onChange(of: viewModel.selectedOverlay) { _, _ in refreshBlockingUIPause() }
-            .onDisappear {
-                setTorch(false)
-            }
         }
     }
 
@@ -119,9 +192,7 @@ struct ScannerView: View {
                     .strokeBorder(Color.black.opacity(0.95), lineWidth: 3)
             )
             .overlay(alignment: .bottom) {
-                LiveScanProgressBar(progress: visibleScanProgress)
-                    .padding(.horizontal, 22)
-                    .padding(.bottom, 8)
+                LiveScanBorderProgress(progress: visibleScanProgress)
             }
             .shadow(color: .black.opacity(0.55), radius: 18, y: 8)
             .task(id: "\(Int(size.width))x\(Int(size.height))") {
@@ -202,21 +273,39 @@ struct ScannerView: View {
             .padding(.top, 14)
             HStack {
                 if viewModel.usingFallbackRates {
-                    Text("Fallback rates").font(.caption2.bold()).foregroundStyle(.black).padding(.horizontal, 9).padding(.vertical, 5).background(AppTheme.accent, in: Capsule())
+                    Button {
+                        showRatesSheet = true
+                    } label: {
+                        Text("Fallback rates").font(.caption2.bold()).foregroundStyle(.black).padding(.horizontal, 9).padding(.vertical, 5).background(AppTheme.accent, in: Capsule())
+                    }
+                    .buttonStyle(.plain)
                 } else {
-                    Text(viewModel.rateTrustLabel).font(.caption2.bold()).foregroundStyle(AppTheme.accent).padding(.horizontal, 9).padding(.vertical, 5).background(.black.opacity(0.42), in: Capsule())
+                    Button {
+                        showRatesSheet = true
+                    } label: {
+                        Text(viewModel.rateTrustLabel).font(.caption2.bold()).foregroundStyle(AppTheme.accent).padding(.horizontal, 9).padding(.vertical, 5).background(.black.opacity(0.42), in: Capsule())
+                    }
+                    .buttonStyle(.plain)
                 }
                 Spacer()
-                Button { toggleTorch() } label: {
-                    Image(systemName: isTorchOn ? "bolt.fill" : "bolt.slash")
+                if !subscription.isPro {
+                    Button {
+                        showUpgradePaywall = true
+                    } label: {
+                        UpgradeIndicatorPill()
+                    }
+                    .buttonStyle(.plain)
+                    .transition(.scale(scale: 0.9).combined(with: .opacity))
+                }
+                Button { cycleSnapFlashMode() } label: {
+                    Image(systemName: snapFlashMode.iconName)
                         .font(.headline)
-                        .foregroundStyle(isTorchOn ? AppTheme.accent : .white)
+                        .foregroundStyle(snapFlashMode == .off ? .white : AppTheme.accent)
                         .frame(width: 44, height: 44)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .disabled(isTorchChanging)
-                .accessibilityLabel(isTorchOn ? "Turn flash off" : "Turn flash on")
+                .accessibilityLabel("Snap flash \(snapFlashMode.accessibilityName)")
                 Button { showSettings = true } label: {
                     Image(systemName: "gearshape")
                         .font(.headline)
@@ -255,43 +344,8 @@ struct ScannerView: View {
         viewModel.resetDetectionState()
     }
 
-    private func toggleTorch() {
-        setTorch(!isTorchOn)
-    }
-
-    private func setTorch(_ enabled: Bool) {
-        guard !isTorchChanging else { return }
-        isTorchChanging = true
-        Task {
-            let changed = await Task.detached(priority: .userInitiated) {
-                guard let device = AVCaptureDevice.default(for: .video), device.hasTorch else {
-                    return false
-                }
-
-                var didLock = false
-                do {
-                    try device.lockForConfiguration()
-                    didLock = true
-                    if enabled {
-                        try device.setTorchModeOn(level: min(0.75, AVCaptureDevice.maxAvailableTorchLevel))
-                    } else {
-                        device.torchMode = .off
-                    }
-                    device.unlockForConfiguration()
-                    return true
-                } catch {
-                    if didLock {
-                        device.unlockForConfiguration()
-                    }
-                    return false
-                }
-            }.value
-
-            await MainActor.run {
-                isTorchOn = changed ? enabled : false
-                isTorchChanging = false
-            }
-        }
+    private func cycleSnapFlashMode() {
+        snapFlashMode = snapFlashMode.next
     }
 
     private func currencyPanel(for role: ScannerCurrencyRole) -> some View {
@@ -322,7 +376,7 @@ struct ScannerView: View {
 
     @MainActor
     private func refreshBlockingUIPause() {
-        let shouldPause = showSettings || selectedCurrencyRole != nil || fullPickerRole != nil || viewModel.selectedOverlay != nil
+        let shouldPause = showSettings || showRatesSheet || showUpgradePaywall || selectedCurrencyRole != nil || fullPickerRole != nil || viewModel.selectedOverlay != nil
         if shouldPause, !isBlockingUIPauseActive {
             wasFrozenBeforeBlockingUI = viewModel.isFrozen
             isBlockingUIPauseActive = true
@@ -374,7 +428,16 @@ struct ScannerView: View {
         defer {
             isProcessingSnap = false
         }
-        guard let capturedImage = await capturePhoto() else {
+        let shouldUseFlashAssist = snapFlashMode == .on
+        if shouldUseFlashAssist {
+            await setSnapFlashAssist(true)
+            try? await Task.sleep(for: .milliseconds(120))
+        }
+        let capturedImage = await capturePhoto()
+        if shouldUseFlashAssist {
+            await setSnapFlashAssist(false)
+        }
+        guard let capturedImage else {
             viewModel.isFrozen = wasFrozenBeforeSnapPreview
             return
         }
@@ -388,6 +451,27 @@ struct ScannerView: View {
             canvasSize: canvasSize,
             shareURL: writeSnapshotForSharing(renderedImage)
         )
+    }
+
+    private func setSnapFlashAssist(_ enabled: Bool) async {
+        await Task.detached(priority: .userInitiated) {
+            guard let device = AVCaptureDevice.default(for: .video), device.hasTorch else { return }
+            var didLock = false
+            do {
+                try device.lockForConfiguration()
+                didLock = true
+                if enabled {
+                    try device.setTorchModeOn(level: min(0.75, AVCaptureDevice.maxAvailableTorchLevel))
+                } else {
+                    device.torchMode = .off
+                }
+                device.unlockForConfiguration()
+            } catch {
+                if didLock {
+                    device.unlockForConfiguration()
+                }
+            }
+        }.value
     }
 
     @MainActor
@@ -418,7 +502,7 @@ struct ScannerView: View {
                 bounds: mappedPhotoBoundsToViewport(candidate.bounds, imageSize: image.size, canvasSize: canvasSize)
             )
         }
-        let parsed = prioritizer.sort(mappedCandidates, in: canvasSize)
+        let parsed = prioritizer.sort(mergeSnapshotCandidates(mappedCandidates), in: canvasSize)
 
         return parsed.prefix(16).map { candidate in
             let convertedAmount = converter.convert(candidate.amount, from: candidate.currencyCode, to: settings.homeCurrencyCode)
@@ -502,7 +586,7 @@ struct ScannerView: View {
         var result: [ParsedPriceCandidate] = []
         for candidate in candidates {
             if let index = result.firstIndex(where: { snapshotCandidate($0, matches: candidate) }) {
-                if candidate.confidence > result[index].confidence {
+                if snapshotCandidatePriority(candidate) > snapshotCandidatePriority(result[index]) {
                     result[index] = candidate
                 }
             } else {
@@ -513,9 +597,24 @@ struct ScannerView: View {
     }
 
     private func snapshotCandidate(_ lhs: ParsedPriceCandidate, matches rhs: ParsedPriceCandidate) -> Bool {
-        lhs.amount == rhs.amount
-            && lhs.currencyCode == rhs.currencyCode
-            && hypot(lhs.bounds.midX - rhs.bounds.midX, lhs.bounds.midY - rhs.bounds.midY) < 56
+        guard lhs.amount == rhs.amount, lhs.currencyCode == rhs.currencyCode else { return false }
+        let yDistance = abs(lhs.bounds.midY - rhs.bounds.midY)
+        let sameLine = yDistance <= max(18, min(44, max(lhs.bounds.height, rhs.bounds.height) * 1.25))
+        let intersection = lhs.bounds.intersection(rhs.bounds)
+        let lhsArea = max(1, lhs.bounds.width * lhs.bounds.height)
+        let rhsArea = max(1, rhs.bounds.width * rhs.bounds.height)
+        let overlapRatio = intersection.isNull ? 0 : (intersection.width * intersection.height) / min(lhsArea, rhsArea)
+        let horizontalGap = max(lhs.bounds.minX, rhs.bounds.minX) - min(lhs.bounds.maxX, rhs.bounds.maxX)
+        let closeOnSameLine = sameLine && horizontalGap <= max(80, max(lhs.bounds.height, rhs.bounds.height) * 4.2)
+        return overlapRatio > 0.15 || closeOnSameLine
+    }
+
+    private func snapshotCandidatePriority(_ candidate: ParsedPriceCandidate) -> CGFloat {
+        let area = max(1, candidate.bounds.width * candidate.bounds.height)
+        let compactnessPenalty = min(4_000, area * 0.08)
+        return CGFloat(candidate.confidence * 1_000)
+            + candidate.bounds.height * 80
+            - compactnessPenalty
     }
 
     private func mappedPhotoBoundsToViewport(_ bounds: CGRect, imageSize: CGSize, canvasSize: CGSize) -> CGRect {
@@ -558,23 +657,27 @@ struct ScannerView: View {
     }
 }
 
-private struct LiveScanProgressBar: View {
+private struct LiveScanBorderProgress: View {
     let progress: CGFloat
 
     var body: some View {
         GeometryReader { proxy in
-            ZStack(alignment: .leading) {
-                RoundedRectangle(cornerRadius: 3, style: .continuous)
-                    .fill(Color.white.opacity(0.14))
-                RoundedRectangle(cornerRadius: 3, style: .continuous)
+            let clamped = min(max(progress, 0), 1)
+            ZStack(alignment: .bottomLeading) {
+                Capsule()
+                    .fill(Color.white.opacity(0.10))
+                    .frame(height: 4)
+                Capsule()
                     .fill(AppTheme.accent)
-                    .frame(width: max(0, proxy.size.width * min(max(progress, 0), 1)))
-                    .shadow(color: AppTheme.accent.opacity(progress > 0 ? 0.75 : 0), radius: 10, y: 1)
+                    .frame(width: max(0, proxy.size.width * clamped), height: 4)
+                    .shadow(color: AppTheme.accent.opacity(progress > 0 ? 0.7 : 0), radius: 8, y: -1)
             }
-            .opacity(progress > 0 ? 1 : 0.42)
+            .padding(.horizontal, 10)
+            .padding(.bottom, 1.5)
+            .opacity(progress > 0 ? 1 : 0)
             .animation(.easeOut(duration: 0.14), value: progress)
         }
-        .frame(height: 7)
+        .frame(height: 8)
         .allowsHitTesting(false)
         .accessibilityHidden(true)
     }

@@ -23,7 +23,8 @@ npm run dev
 GET /health
 GET /rates/latest
 GET /rates/convert?from=JPY&to=MYR&amount=1200
-POST /tasks/sync-rates
+GET /tasks/sync-rates
+POST /tasks/sync-rates?force=true
 Authorization: Bearer <CRON_SECRET>
 ```
 
@@ -34,7 +35,8 @@ Authorization: Bearer <CRON_SECRET>
 - For local Simulator development, PriceLens currently points to `http://127.0.0.1:8787`.
 - Before TestFlight, replace `PRICE_LENS_API_BASE_URL` in the iOS project config with your deployed HTTPS backend URL.
 - `GET /rates/latest` returns the latest cached rates. It bootstraps from ExchangeRate-API if the database is empty.
-- `/tasks/sync-rates` checks the cached `next_update_at` from ExchangeRate-API and skips the upstream request until that time has passed.
+- `GET /tasks/sync-rates` is the Vercel Cron endpoint. It checks the cached `next_update_at` from ExchangeRate-API and skips the upstream request until that time has passed.
+- `POST /tasks/sync-rates?force=true` is the manual admin endpoint. Use it sparingly because it can bypass the provider update guard.
 - This keeps ExchangeRate-API usage to roughly one request per provider update cycle.
 
 ## Vercel
@@ -57,4 +59,4 @@ EXCHANGE_RATE_BASE_CURRENCY=USD
 CRON_SECRET
 ```
 
-`vercel.json` configures a daily Vercel Cron run at 03:00 UTC against `/tasks/sync-rates`.
+`vercel.json` configures a daily Vercel Cron run at 00:02 UTC against `/tasks/sync-rates`.

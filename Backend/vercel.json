@@ -9,7 +9,7 @@
   "crons": [
     {
       "path": "/tasks/sync-rates",
-      "schedule": "15 * * * *"
+      "schedule": "2 0 * * *"
     }
   ]
 }

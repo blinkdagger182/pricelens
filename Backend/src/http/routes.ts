@@ -42,24 +42,43 @@ export function createRouter(): Router {
     }
   });
 
+  router.get("/tasks/sync-rates", async (request, response, next) => {
+    try {
+      if (!isAuthorizedSyncRequest(request, false)) {
+        response.status(401).json({ error: "Unauthorized" });
+        return;
+      }
+
+      const result = await syncLatestRates(config.EXCHANGE_RATE_BASE_CURRENCY, false);
+      response.json({ ok: true, triggeredBy: "cron", ...result });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   router.post("/tasks/sync-rates", async (request, response, next) => {
     try {
-      if (config.CRON_SECRET) {
-        const authorization = request.header("authorization");
-        const isVercelCron = request.header("x-vercel-cron") === "1";
-        if (!isVercelCron && authorization !== `Bearer ${config.CRON_SECRET}`) {
-          response.status(401).json({ error: "Unauthorized" });
-          return;
-        }
+      if (!isAuthorizedSyncRequest(request, true)) {
+        response.status(401).json({ error: "Unauthorized" });
+        return;
       }
 
       const query = z.object({ force: z.coerce.boolean().optional() }).parse(request.query);
       const result = await syncLatestRates(config.EXCHANGE_RATE_BASE_CURRENCY, query.force ?? false);
-      response.json({ ok: true, ...result });
+      response.json({ ok: true, triggeredBy: "manual", ...result });
     } catch (error) {
       next(error);
     }
   });
 
   return router;
+}
+
+function isAuthorizedSyncRequest(request: express.Request, allowManual: boolean): boolean {
+  if (config.CRON_SECRET) {
+    return request.header("authorization") === `Bearer ${config.CRON_SECRET}`;
+  }
+
+  const isVercelCron = request.header("x-vercel-cron") === "1";
+  return isVercelCron || (allowManual && process.env.NODE_ENV !== "production");
 }

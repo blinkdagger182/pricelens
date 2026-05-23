@@ -3,6 +3,8 @@ import Foundation
 import StoreKit
 
 final class SettingsStore: ObservableObject {
+    static let maxFavoriteCurrencyCount = 5
+
     @Published var hasCompletedOnboarding: Bool { didSet { defaults.set(hasCompletedOnboarding, forKey: AppStorageKeys.hasCompletedOnboarding) } }
     @Published var homeCurrencyCode: String { didSet { defaults.set(homeCurrencyCode, forKey: AppStorageKeys.homeCurrencyCode) } }
     @Published var travelCurrencyCode: String { didSet { defaults.set(travelCurrencyCode, forKey: AppStorageKeys.travelCurrencyCode) } }
@@ -46,8 +48,22 @@ final class SettingsStore: ObservableObject {
 
     func addFavoriteCurrency(_ code: String) {
         let normalized = code.uppercased()
-        guard !favoriteCurrencyCodes.contains(normalized) else { return }
-        favoriteCurrencyCodes.append(normalized)
+        favoriteCurrencyCodes.removeAll { $0 == normalized }
+        favoriteCurrencyCodes.insert(normalized, at: 0)
+        favoriteCurrencyCodes = Array(favoriteCurrencyCodes.prefix(Self.maxFavoriteCurrencyCount))
+    }
+
+    @discardableResult
+    func togglePinnedRate(_ code: String) -> Bool {
+        let normalized = code.uppercased()
+        if let index = favoriteCurrencyCodes.firstIndex(of: normalized) {
+            favoriteCurrencyCodes.remove(at: index)
+            return true
+        } else {
+            guard favoriteCurrencyCodes.count < Self.maxFavoriteCurrencyCount else { return false }
+            favoriteCurrencyCodes.insert(normalized, at: 0)
+            return true
+        }
     }
 
     func updateTravelCurrencyFromCurrentLocationIfNeeded() async {
@@ -85,8 +101,16 @@ final class SettingsStore: ObservableObject {
 
     private static func loadFavoriteCurrencies(defaults: UserDefaults) -> [String] {
         if let codes = defaults.stringArray(forKey: AppStorageKeys.favoriteCurrencyCodes), !codes.isEmpty {
-            return codes.map { $0.uppercased() }
+            return Array(codes.map { $0.uppercased() }.prefix(maxFavoriteCurrencyCount))
         }
-        return Array(Set([Locale.deviceCurrencyCode, "MYR", "USD", "JPY", "SGD", "EUR", "GBP"])).sorted()
+        return Array([Locale.deviceCurrencyCode, "MYR", "USD", "JPY", "SGD"].map { $0.uppercased() }.uniqued().prefix(maxFavoriteCurrencyCount))
+    }
+
+}
+
+private extension Array where Element: Hashable {
+    func uniqued() -> [Element] {
+        var seen = Set<Element>()
+        return filter { seen.insert($0).inserted }
     }
 }
