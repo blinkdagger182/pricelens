@@ -22,7 +22,7 @@ struct ScannerControlsView: View {
             controlButton(icon: "arrow.left.arrow.right", title: "Convert", action: showManual)
         }
         .padding(.horizontal, 30)
-        .padding(.bottom, 34)
+        .padding(.bottom, 22)
     }
 
     private func controlButton(icon: String, title: String, action: @escaping () -> Void) -> some View {

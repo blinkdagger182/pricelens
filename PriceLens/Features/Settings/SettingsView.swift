@@ -22,37 +22,6 @@ struct SettingsView: View {
                         row("Travel currency", value: settings.travelCurrencyCode)
                     }
                 }
-                Section("Scanning") {
-                    Toggle(isOn: $settings.liveDetectionEnabled) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            HStack(spacing: 8) {
-                                Text("Live detection")
-                                if !subscription.isPro {
-                                    Text("Pro")
-                                        .font(.caption2.bold())
-                                        .foregroundStyle(.black)
-                                        .padding(.horizontal, 7)
-                                        .padding(.vertical, 3)
-                                        .background(AppTheme.accent, in: Capsule())
-                                }
-                            }
-                            Text(subscription.isPro ? "Show converted prices while the camera is open." : "Upgrade to scan prices live. Free users get 10 snaps per day.")
-                                .font(.caption)
-                                .foregroundStyle(AppTheme.textSecondary)
-                        }
-                    }
-                    .disabled(!subscription.isPro)
-                    .tint(AppTheme.accent)
-
-                    if !subscription.isPro {
-                        Button {
-                            showPaywall = true
-                        } label: {
-                            Label("Unlock live detection", systemImage: "sparkles")
-                                .foregroundStyle(AppTheme.accent)
-                        }
-                    }
-                }
                 Section("Pricetag AI Plus") {
                     row("Subscription", value: subscriptionStatusText)
                     Button {

@@ -41,34 +41,6 @@ private enum SnapFlashMode: CaseIterable {
     }
 }
 
-private struct UpgradeIndicatorPill: View {
-    var body: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "sparkles")
-                .font(.caption.bold())
-            Text("Plus")
-                .font(.caption.bold())
-        }
-        .foregroundStyle(.black)
-        .padding(.horizontal, 10)
-        .padding(.vertical, 7)
-        .background(
-            LinearGradient(
-                colors: [AppTheme.accent, Color.white.opacity(0.92)],
-                startPoint: .leading,
-                endPoint: .trailing
-            ),
-            in: Capsule()
-        )
-        .overlay(
-            Capsule()
-                .strokeBorder(Color.white.opacity(0.32), lineWidth: 1)
-        )
-        .shadow(color: AppTheme.accent.opacity(0.38), radius: 12, y: 4)
-        .accessibilityLabel("Upgrade to Pricetag AI Plus")
-    }
-}
-
 struct ScannerView: View {
     @EnvironmentObject private var settings: SettingsStore
     @EnvironmentObject private var history: ScanHistoryStore
@@ -90,6 +62,8 @@ struct ScannerView: View {
     @State private var snapFlashMode: SnapFlashMode = .auto
     @State private var showUpgradePaywall = false
     @State private var showRatesSheet = false
+    @State private var snapQuotaToastMessage: String?
+    @State private var snapQuotaToastTask: Task<Void, Never>?
 
     private let bottomChromeHeight: CGFloat = 218
     private let cameraCornerRadius: CGFloat = 34
@@ -106,6 +80,15 @@ struct ScannerView: View {
             }
             .frame(width: proxy.size.width, height: proxy.size.height)
             .background(Color.black.ignoresSafeArea())
+            .overlay(alignment: .bottom) {
+                if let snapQuotaToastMessage {
+                    SnapQuotaToast(message: snapQuotaToastMessage)
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, bottomChromeHeight + 10)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                        .zIndex(80)
+                }
+            }
             .sheet(item: $viewModel.selectedOverlay, onDismiss: refreshBlockingUIPause) { overlay in
                 ScanResultDetailSheet(overlay: overlay) { history.add(viewModel.historyItem(from: overlay)) }
                     .presentationDetents([.medium])
@@ -321,24 +304,6 @@ struct ScannerView: View {
                     .buttonStyle(.plain)
                 }
                 Spacer()
-                if !subscription.isPro {
-                    VStack(alignment: .trailing, spacing: 5) {
-                        Button {
-                            presentUsagePaywall()
-                        } label: {
-                            UpgradeIndicatorPill()
-                        }
-                        .buttonStyle(.plain)
-                        .transition(.scale(scale: 0.9).combined(with: .opacity))
-
-                        Text("\(usageLimits.remainingSnaps) snaps left today")
-                            .font(.caption2.weight(.semibold))
-                            .foregroundStyle(AppTheme.textSecondary)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(.black.opacity(0.42), in: Capsule())
-                    }
-                }
                 Button { showSettings = true } label: {
                     Image(systemName: "gearshape")
                         .font(.headline)
@@ -431,15 +396,23 @@ struct ScannerView: View {
     }
 
     private var conversionTemplates: [ConversionTemplate] {
-        [
-            .init(source: "MYR", target: "USD"),
-            .init(source: "USD", target: "MYR"),
-            .init(source: "SGD", target: "MYR"),
-            .init(source: "JPY", target: "MYR"),
-            .init(source: "EUR", target: "MYR"),
-            .init(source: "GBP", target: "MYR"),
-            .init(source: "AUD", target: "MYR")
-        ]
+        let home = settings.homeCurrencyCode.uppercased()
+        let travel = settings.travelCurrencyCode.uppercased()
+        let popularTravelCodes = ["USD", "EUR", "GBP", "AUD", "SGD", "JPY", "MYR"]
+        let pairs = [
+            ConversionTemplate(source: travel, target: home),
+            ConversionTemplate(source: home, target: travel),
+            ConversionTemplate(source: travel, target: "USD"),
+            ConversionTemplate(source: "USD", target: home)
+        ] + popularTravelCodes.map {
+            ConversionTemplate(source: $0, target: home)
+        }
+
+        var seen = Set<String>()
+        return pairs.filter { template in
+            guard template.source != template.target else { return false }
+            return seen.insert(template.id).inserted
+        }
     }
 
     private func applyConversionTemplate(_ template: ConversionTemplate) {
@@ -602,6 +575,25 @@ struct ScannerView: View {
     @MainActor
     private func resumeLiveDetectionAfterSnap() {
         viewModel.isFrozen = wasFrozenBeforeSnapPreview
+        showSnapQuotaToastIfNeeded()
+    }
+
+    @MainActor
+    private func showSnapQuotaToastIfNeeded() {
+        guard !subscription.isPro, usageLimits.remainingSnaps <= 5 else { return }
+        let remaining = usageLimits.remainingSnaps
+        snapQuotaToastTask?.cancel()
+        withAnimation(.spring(response: 0.28, dampingFraction: 0.9)) {
+            snapQuotaToastMessage = remaining == 0 ? "No free snaps left today" : "\(remaining) free snaps left today"
+        }
+        snapQuotaToastTask = Task {
+            try? await Task.sleep(for: .seconds(2.6))
+            await MainActor.run {
+                withAnimation(.easeOut(duration: 0.18)) {
+                    snapQuotaToastMessage = nil
+                }
+            }
+        }
     }
 
     @MainActor
@@ -902,6 +894,26 @@ private struct ConversionTemplatePill: View {
 
     private func flag(for code: String) -> String {
         Currency.find(code).flag
+    }
+}
+
+private struct SnapQuotaToast: View {
+    let message: String
+
+    var body: some View {
+        HStack(spacing: 9) {
+            Image(systemName: "camera.viewfinder")
+                .font(.caption.bold())
+                .foregroundStyle(AppTheme.accent)
+            Text(message)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(AppTheme.textPrimary)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 11)
+        .background(.black.opacity(0.78), in: Capsule())
+        .overlay(Capsule().strokeBorder(AppTheme.accent.opacity(0.42), lineWidth: 1))
+        .shadow(color: AppTheme.accent.opacity(0.18), radius: 14, y: 6)
     }
 }
 
