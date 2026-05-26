@@ -22,7 +22,38 @@ struct SettingsView: View {
                         row("Travel currency", value: settings.travelCurrencyCode)
                     }
                 }
-                Section("PriceLens Plus") {
+                Section("Scanning") {
+                    Toggle(isOn: $settings.liveDetectionEnabled) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack(spacing: 8) {
+                                Text("Live detection")
+                                if !subscription.isPro {
+                                    Text("Pro")
+                                        .font(.caption2.bold())
+                                        .foregroundStyle(.black)
+                                        .padding(.horizontal, 7)
+                                        .padding(.vertical, 3)
+                                        .background(AppTheme.accent, in: Capsule())
+                                }
+                            }
+                            Text(subscription.isPro ? "Show converted prices while the camera is open." : "Upgrade to scan prices live. Free users get 10 snaps per day.")
+                                .font(.caption)
+                                .foregroundStyle(AppTheme.textSecondary)
+                        }
+                    }
+                    .disabled(!subscription.isPro)
+                    .tint(AppTheme.accent)
+
+                    if !subscription.isPro {
+                        Button {
+                            showPaywall = true
+                        } label: {
+                            Label("Unlock live detection", systemImage: "sparkles")
+                                .foregroundStyle(AppTheme.accent)
+                        }
+                    }
+                }
+                Section("Pricetag AI Plus") {
                     row("Subscription", value: subscriptionStatusText)
                     Button {
                         showPaywall = true
@@ -62,7 +93,7 @@ struct SettingsView: View {
                     }
                 }
                 Section("Rates") {
-                    row("Rate status", value: rateStatus.isOfficial ? "PriceLens Official Rates" : "Local fallback")
+                    row("Rate status", value: rateStatus.isOfficial ? "Pricetag AI Official Rates" : "Local fallback")
                     row("Source", value: providerName)
                     row("Updated", value: updatedText)
                     if let nextUpdateText {
@@ -87,7 +118,7 @@ struct SettingsView: View {
                     }
                 }
                 Section("Privacy") {
-                    Text("PriceLens reads prices on your device where possible. Camera images are not saved unless you save a scan.")
+                    Text("Pricetag AI reads prices on your device where possible. Camera images are not saved unless you save a scan.")
                         .font(.subheadline)
                         .foregroundStyle(AppTheme.textSecondary)
                 }
@@ -188,10 +219,14 @@ private struct HowToUseView: View {
                         .padding(.top, 10)
 
                     VStack(spacing: 10) {
-                        Text("How to use PriceLens")
-                            .font(.largeTitle.bold())
+                        HStack(spacing: 0) {
+                            Text("How to use ")
+                                .foregroundStyle(AppTheme.textPrimary)
+                            PricetagAIWordmark(font: .largeTitle.bold())
+                        }
+                        .font(.largeTitle.bold())
                             .multilineTextAlignment(.center)
-                        Text("Point your camera at price tags, menus, or receipts. PriceLens reads prices on device, converts them, and keeps the result anchored near the original value.")
+                        Text("Point your camera at price tags, menus, or receipts. Pricetag AI reads prices on device, converts them, and keeps the result anchored near the original value.")
                             .font(.body)
                             .foregroundStyle(AppTheme.textSecondary)
                             .multilineTextAlignment(.center)

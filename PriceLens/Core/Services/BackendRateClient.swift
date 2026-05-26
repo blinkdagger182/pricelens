@@ -39,7 +39,7 @@ struct BackendRateClient {
     }
 }
 
-private extension Bundle {
+extension Bundle {
     var priceLensAPIBaseURL: URL {
         let value = object(forInfoDictionaryKey: "PRICE_LENS_API_BASE_URL") as? String
         return URL(string: value ?? "http://127.0.0.1:8787")!

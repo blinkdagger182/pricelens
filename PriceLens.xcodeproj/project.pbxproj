@@ -11,6 +11,7 @@
 		09AA3438FD542FFFE71984F1 /* Color+Hex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BC18CF2F43969E5230A3F69 /* Color+Hex.swift */; };
 		0A8B02B4F9216F489726E029 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2122ACCC4B020F197397EF64 /* OnboardingView.swift */; };
 		0B4CAAB79B14E101744D2E0B /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7710971E10F35CADB722FA93 /* SettingsStore.swift */; };
+		0D6124559D80D430DCEB0051 /* AppVersionPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7697C803AEE74872D5E4B609 /* AppVersionPolicy.swift */; };
 		148D06F6D9745C71A3B572A9 /* OverlayStabilizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6050F01223D1106663C9207E /* OverlayStabilizer.swift */; };
 		1506919165C2B6B5864E509D /* String+PriceParsing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6092811BEF31D6926DED483E /* String+PriceParsing.swift */; };
 		15A20420D1A7F37682098FE4 /* OnboardingDemoScreenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E73D20532BA32EF5632CE9F3 /* OnboardingDemoScreenView.swift */; };
@@ -25,9 +26,12 @@
 		2B0AF2A9E811CAD6943B60D8 /* CurrencyRateService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA5C783CDC5C053A2FE4AF44 /* CurrencyRateService.swift */; };
 		2EFC9491D915966FB0833110 /* iPhone17Pro.glb in Resources */ = {isa = PBXBuildFile; fileRef = 7526ADA64F3B0C2D5F7BB609 /* iPhone17Pro.glb */; };
 		330208BFF520091203BC9EBD /* ScanHistoryItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33DD5A3EB33E03E977183275 /* ScanHistoryItem.swift */; };
+		34610E048A8C529B2C5F7E8D /* AppVersionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B53F455B4904E6139D022D4 /* AppVersionStore.swift */; };
 		37E0C87B95B126A31E639601 /* CurrencyPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 380392ADFDF45B6470ED907D /* CurrencyPickerView.swift */; };
+		38F54EE5F1B4E84B7E652FCA /* UsageLimitStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05E125F866426163BDAB8C11 /* UsageLimitStore.swift */; };
 		3A0E853081C9C7C18BC1CADE /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = E267C44A4A398A87F534BB5F /* AppSettings.swift */; };
 		3AA2AA01C12B82F838B83AE1 /* PriceLensPaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5E01BEAA498AB7A26DD6832 /* PriceLensPaywallView.swift */; };
+		3D9879647A99F4B4A678594B /* PricetagAIWordmark.swift in Sources */ = {isa = PBXBuildFile; fileRef = F579A660AD3E66E132B5C4F6 /* PricetagAIWordmark.swift */; };
 		3F136AF39FDA0FBDFC3A94A0 /* ConversionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5F4DAB24B9E7D57869B897E /* ConversionEngine.swift */; };
 		44A95BBD916A960934F34B9E /* CurrencyFlagView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4D7D300386732AD92337A5F /* CurrencyFlagView.swift */; };
 		57A2E9B2EF37162347A2C4E8 /* AppStorageKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41A2F4D8059B1605520290B1 /* AppStorageKeys.swift */; };
@@ -47,6 +51,7 @@
 		9FDBB0B8D332BB85C70812EF /* ManualConverterViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7192D23F9054BDBC419D1385 /* ManualConverterViewModel.swift */; };
 		A1B1CA14AB6588640EF4093A /* PriceOverlayLayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2691EB62D96E2D01C89B485F /* PriceOverlayLayer.swift */; };
 		A1D2C6A405E11997D82C8D41 /* SubscriptionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D7641F20F7ACE364CA4054E /* SubscriptionStore.swift */; };
+		A67C61DE25B3BC198CC543EF /* AppVersionClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7358216893B07718E0F84836 /* AppVersionClient.swift */; };
 		A82E9350CB87452A54533940 /* OnboardingSurveyQuestionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC0E384EBB4BEE5539C9A689 /* OnboardingSurveyQuestionView.swift */; };
 		A9D0C95A573EBDCF3E260D18 /* HistoryRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2D91B31F34B67D4B66AB1A0 /* HistoryRowView.swift */; };
 		ABB0BDB7673AFE6780E4F44F /* ManualConverterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 848B50188CDC5B3A2475A924 /* ManualConverterView.swift */; };
@@ -60,6 +65,7 @@
 		C06A736BA037D1D9B6DD22EF /* View+Modifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30DF27E6B2349B23D0C3F360 /* View+Modifiers.swift */; };
 		C06C224328465C97B08BC800 /* GLTFKit2.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = CA2986B3ECB7708F208B7CD2 /* GLTFKit2.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		C106F67D2641A480864A5F63 /* BackendRateClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 841BB2A5A5318EB60DC974AF /* BackendRateClient.swift */; };
+		C187BFB31DCDDF1D3D59463B /* AppUpdateSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4092F46A60F7CC8C02E7524A /* AppUpdateSheet.swift */; };
 		C1152E78F339C6E1BA7A4D4A /* PriceLensApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 129425D08EC63D3BFFE08FA3 /* PriceLensApp.swift */; };
 		C3A6EA6F7D4CFEF09B380122 /* OnboardingCurrencyGlobeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 921D42DC6F37AF1BBD45D660 /* OnboardingCurrencyGlobeView.swift */; };
 		C408CD26208525AA1B9D8FC6 /* RatesSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCC0AF5AD5AEEEAC861330B0 /* RatesSheetView.swift */; };
@@ -94,6 +100,7 @@
 
 /* Begin PBXFileReference section */
 		04CDF9A927CB270C79891BF9 /* CurrencyPill.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrencyPill.swift; sourceTree = "<group>"; };
+		05E125F866426163BDAB8C11 /* UsageLimitStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UsageLimitStore.swift; sourceTree = "<group>"; };
 		0BB8EC0D15026E9BF325104A /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
 		129425D08EC63D3BFFE08FA3 /* PriceLensApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PriceLensApp.swift; sourceTree = "<group>"; };
 		1D3478E7EF447AA6943A1EE4 /* CurrencyQuickSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrencyQuickSheet.swift; sourceTree = "<group>"; };
@@ -106,6 +113,7 @@
 		387D40C3560E13AA2CEC2B76 /* iPhone3DHeroSceneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iPhone3DHeroSceneView.swift; sourceTree = "<group>"; };
 		3D7641F20F7ACE364CA4054E /* SubscriptionStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SubscriptionStore.swift; sourceTree = "<group>"; };
 		3E1A058D2449BAD44AB54917 /* PrimaryButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrimaryButton.swift; sourceTree = "<group>"; };
+		4092F46A60F7CC8C02E7524A /* AppUpdateSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppUpdateSheet.swift; sourceTree = "<group>"; };
 		41A2F4D8059B1605520290B1 /* AppStorageKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStorageKeys.swift; sourceTree = "<group>"; };
 		4BC18CF2F43969E5230A3F69 /* Color+Hex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Hex.swift"; sourceTree = "<group>"; };
 		4C87E83F4ED03E8192FBAF42 /* OnboardingConversionCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingConversionCard.swift; sourceTree = "<group>"; };
@@ -119,8 +127,10 @@
 		6C5954F3B97715987439136E /* PriceOverlayCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PriceOverlayCard.swift; sourceTree = "<group>"; };
 		709C0F9E8D618ACEF71EF1FB /* DetectedPrice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetectedPrice.swift; sourceTree = "<group>"; };
 		7192D23F9054BDBC419D1385 /* ManualConverterViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualConverterViewModel.swift; sourceTree = "<group>"; };
+		7358216893B07718E0F84836 /* AppVersionClient.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppVersionClient.swift; sourceTree = "<group>"; };
 		742BB1E46D172DEFDF1C3080 /* CameraPermissionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPermissionService.swift; sourceTree = "<group>"; };
 		7526ADA64F3B0C2D5F7BB609 /* iPhone17Pro.glb */ = {isa = PBXFileReference; lastKnownFileType = file; path = iPhone17Pro.glb; sourceTree = "<group>"; };
+		7697C803AEE74872D5E4B609 /* AppVersionPolicy.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppVersionPolicy.swift; sourceTree = "<group>"; };
 		7710971E10F35CADB722FA93 /* SettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsStore.swift; sourceTree = "<group>"; };
 		78A5F345BB3A4E029E2BFF11 /* TravelCurrencySelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TravelCurrencySelectionView.swift; sourceTree = "<group>"; };
 		7B36D17E768C01DC3A542C88 /* ScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScannerView.swift; sourceTree = "<group>"; };
@@ -129,6 +139,7 @@
 		848B50188CDC5B3A2475A924 /* ManualConverterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualConverterView.swift; sourceTree = "<group>"; };
 		881F2CAC126C8DC5811F6BD5 /* LocationCurrencyService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationCurrencyService.swift; sourceTree = "<group>"; };
 		8A5CD045B5AEB7DEC4CF985B /* ScanHistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanHistoryStore.swift; sourceTree = "<group>"; };
+		8B53F455B4904E6139D022D4 /* AppVersionStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppVersionStore.swift; sourceTree = "<group>"; };
 		8D24B727FB0F34D5CC838F8D /* ScannerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScannerViewModel.swift; sourceTree = "<group>"; };
 		8E706249A2FB1960354C0EE2 /* PriceLens.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PriceLens.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8EE99FD611514B70878EFD5E /* OnboardingBagPropArt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingBagPropArt.swift; sourceTree = "<group>"; };
@@ -156,6 +167,7 @@
 		E73D20532BA32EF5632CE9F3 /* OnboardingDemoScreenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingDemoScreenView.swift; sourceTree = "<group>"; };
 		EBC153E03434EB80B6BFE2BC /* PriceOverlayItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PriceOverlayItem.swift; sourceTree = "<group>"; };
 		EF419D485A90936C57E1BDB4 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		F579A660AD3E66E132B5C4F6 /* PricetagAIWordmark.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PricetagAIWordmark.swift; sourceTree = "<group>"; };
 		F5F4DAB24B9E7D57869B897E /* ConversionEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversionEngine.swift; sourceTree = "<group>"; };
 		FC587E892FC1F2FE00DC60AE /* OnboardingDemoConversion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingDemoConversion.swift; sourceTree = "<group>"; };
 		FCC0AF5AD5AEEEAC861330B0 /* RatesSheetView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RatesSheetView.swift; sourceTree = "<group>"; };
@@ -180,6 +192,8 @@
 		025ECDEF378F1A95F00F7EDC /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				7358216893B07718E0F84836 /* AppVersionClient.swift */,
+				8B53F455B4904E6139D022D4 /* AppVersionStore.swift */,
 				841BB2A5A5318EB60DC974AF /* BackendRateClient.swift */,
 				742BB1E46D172DEFDF1C3080 /* CameraPermissionService.swift */,
 				F5F4DAB24B9E7D57869B897E /* ConversionEngine.swift */,
@@ -191,6 +205,7 @@
 				FE9C0AB6814D42F0ACD1137B /* PriceCandidatePrioritizer.swift */,
 				DDB9E9BE1EC2618074E6D190 /* PriceParser.swift */,
 				3D7641F20F7ACE364CA4054E /* SubscriptionStore.swift */,
+				05E125F866426163BDAB8C11 /* UsageLimitStore.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -220,9 +235,11 @@
 				04CDF9A927CB270C79891BF9 /* CurrencyPill.swift */,
 				0BB8EC0D15026E9BF325104A /* EmptyStateView.swift */,
 				694F1E4C7724060B1A21A0ED /* ErrorStateView.swift */,
+				4092F46A60F7CC8C02E7524A /* AppUpdateSheet.swift */,
 				7CFB7E7BCBF23022EF7FB8E4 /* GlassCard.swift */,
 				3E1A058D2449BAD44AB54917 /* PrimaryButton.swift */,
 				E5E01BEAA498AB7A26DD6832 /* PriceLensPaywallView.swift */,
+				F579A660AD3E66E132B5C4F6 /* PricetagAIWordmark.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -394,6 +411,7 @@
 			isa = PBXGroup;
 			children = (
 				E267C44A4A398A87F534BB5F /* AppSettings.swift */,
+				7697C803AEE74872D5E4B609 /* AppVersionPolicy.swift */,
 				D0D33645B394EDA9876183E9 /* Currency.swift */,
 				709C0F9E8D618ACEF71EF1FB /* DetectedPrice.swift */,
 				E166088308D8D380416131B1 /* ExchangeRate.swift */,
@@ -502,6 +520,10 @@
 				3A0E853081C9C7C18BC1CADE /* AppSettings.swift in Sources */,
 				57A2E9B2EF37162347A2C4E8 /* AppStorageKeys.swift in Sources */,
 				184C784E380914502D08A4B8 /* AppTheme.swift in Sources */,
+				C187BFB31DCDDF1D3D59463B /* AppUpdateSheet.swift in Sources */,
+				A67C61DE25B3BC198CC543EF /* AppVersionClient.swift in Sources */,
+				0D6124559D80D430DCEB0051 /* AppVersionPolicy.swift in Sources */,
+				34610E048A8C529B2C5F7E8D /* AppVersionStore.swift in Sources */,
 				C106F67D2641A480864A5F63 /* BackendRateClient.swift in Sources */,
 				1B81A91D22165CEE5A3C9751 /* CameraPermissionService.swift in Sources */,
 				09AA3438FD542FFFE71984F1 /* Color+Hex.swift in Sources */,
@@ -555,6 +577,7 @@
 				FC587E8A2FC1F2FE00DC60AE /* OnboardingDemoConversion.swift in Sources */,
 				1506919165C2B6B5864E509D /* String+PriceParsing.swift in Sources */,
 				E1D7D634F53B1713AC45AB53 /* TravelCurrencySelectionView.swift in Sources */,
+				38F54EE5F1B4E84B7E652FCA /* UsageLimitStore.swift in Sources */,
 				C06A736BA037D1D9B6DD22EF /* View+Modifiers.swift in Sources */,
 				E02C06362E7522BDCB3CA9D0 /* iPhone3DHeroSceneView.swift in Sources */,
 				A1D2C6A405E11997D82C8D41 /* SubscriptionStore.swift in Sources */,
@@ -562,6 +585,7 @@
 				C408CD26208525AA1B9D8FC6 /* RatesSheetView.swift in Sources */,
 				A82E9350CB87452A54533940 /* OnboardingSurveyQuestionView.swift in Sources */,
 				C3A6EA6F7D4CFEF09B380122 /* OnboardingCurrencyGlobeView.swift in Sources */,
+				3D9879647A99F4B4A678594B /* PricetagAIWordmark.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

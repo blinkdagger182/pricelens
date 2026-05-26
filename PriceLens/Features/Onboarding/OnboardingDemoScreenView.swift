@@ -455,7 +455,7 @@ struct OnboardingDemoScreenView: View {
             HStack {
                 CurrencyPill(code: conversion.targetCode).scaleEffect(0.92)
                 Spacer()
-                Text("PriceLens").font(.headline.bold()).foregroundStyle(.white)
+                PricetagAIWordmark(font: .headline.bold())
                 Spacer()
                 CurrencyPill(code: "JPY").scaleEffect(0.92)
             }

@@ -19,24 +19,36 @@ struct OnboardingSurveyQuestionView: View {
     let question: OnboardingSurveyQuestion
     @Binding var selection: String
     let onContinue: () -> Void
+    @State private var contentVisible = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 22) {
             surveyHeader
             VStack(spacing: 12) {
-                ForEach(question.options) { option in
+                ForEach(Array(question.options.enumerated()), id: \.element.id) { index, option in
                     Button {
                         selection = option.id
                     } label: {
                         SurveyOptionRow(option: option, isSelected: selection == option.id)
                     }
                     .buttonStyle(.plain)
+                    .opacity(contentVisible ? 1 : 0)
+                    .offset(y: contentVisible ? 0 : 18)
+                    .animation(.easeOut(duration: 0.34).delay(0.1 + Double(index) * 0.055), value: contentVisible)
                 }
             }
             Spacer(minLength: 10)
             PrimaryButton(title: selection.isEmpty ? "Choose one" : "Continue", action: onContinue)
                 .disabled(selection.isEmpty)
                 .opacity(selection.isEmpty ? 0.45 : 1)
+                .offset(y: contentVisible ? 0 : 14)
+                .animation(.easeOut(duration: 0.3).delay(0.26), value: contentVisible)
+        }
+        .onAppear {
+            contentVisible = false
+            withAnimation(.easeOut(duration: 0.32)) {
+                contentVisible = true
+            }
         }
     }
 
@@ -48,6 +60,9 @@ struct OnboardingSurveyQuestionView: View {
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
                 .background(AppTheme.accent.opacity(0.14), in: Capsule())
+                .opacity(contentVisible ? 1 : 0)
+                .offset(y: contentVisible ? 0 : 10)
+                .animation(.easeOut(duration: 0.28), value: contentVisible)
 
             VStack(alignment: .leading, spacing: 8) {
                 Text(question.title)
@@ -59,6 +74,9 @@ struct OnboardingSurveyQuestionView: View {
                     .foregroundStyle(AppTheme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
+            .opacity(contentVisible ? 1 : 0)
+            .offset(y: contentVisible ? 0 : 16)
+            .animation(.easeOut(duration: 0.34).delay(0.04), value: contentVisible)
         }
     }
 }

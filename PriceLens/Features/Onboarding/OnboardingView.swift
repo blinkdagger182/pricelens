@@ -16,7 +16,7 @@ struct OnboardingView: View {
                 case 1...3: surveyFlow
                 case 4: OnboardingCurrencyGlobePage { goToStep(5) }
                 case 5: HomeCurrencySelectionView(selectedCode: $settings.homeCurrencyCode) { goToStep(6) }
-                case 6: TravelCurrencySelectionView(selectedCode: $settings.travelCurrencyCode) { showOnboardingPaywall = true }
+                case 6: TravelCurrencySelectionView(selectedCode: $settings.travelCurrencyCode) { showPaywallWithoutPageFlash() }
                 default: cameraPermission
                 }
             }
@@ -33,7 +33,12 @@ struct OnboardingView: View {
             OnboardingHeroView()
                 .padding(.top, 6)
             VStack(spacing: 10) {
-                Text("Welcome to PriceLens").font(.largeTitle.bold())
+                HStack(spacing: 0) {
+                    Text("Welcome to ")
+                        .foregroundStyle(AppTheme.textPrimary)
+                    PricetagAIWordmark(font: .largeTitle.bold())
+                }
+                .font(.largeTitle.bold())
                 Text("Currency Camera for Travel").font(.title3.bold()).foregroundStyle(AppTheme.textSecondary)
                 Text("Point your camera at price tags, menus, or receipts and see converted prices float in place.")
                     .font(.body)
@@ -82,8 +87,24 @@ struct OnboardingView: View {
     }
 
     private func goToStep(_ nextStep: Int) {
-        withAnimation(.easeOut(duration: 0.22)) {
-            step = nextStep
+        if step >= 1 && step <= 3 && nextStep >= 1 && nextStep <= 3 {
+            withAnimation(.easeOut(duration: 0.22)) {
+                step = nextStep
+            }
+        } else {
+            var transaction = Transaction()
+            transaction.disablesAnimations = true
+            withTransaction(transaction) {
+                step = nextStep
+            }
+        }
+    }
+
+    private func showPaywallWithoutPageFlash() {
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
+            showOnboardingPaywall = true
         }
     }
 
@@ -103,7 +124,7 @@ struct OnboardingView: View {
             Spacer()
             Image(systemName: "camera.viewfinder").font(.system(size: 54)).foregroundStyle(AppTheme.accent)
             Text("Enable Camera Scanning").font(.title.bold())
-            Text("PriceLens scans visible text on your device and places converted prices over the camera preview.")
+            Text("Pricetag AI scans visible text on your device and places converted prices over the camera preview.")
                 .font(.body)
                 .foregroundStyle(AppTheme.textSecondary)
                 .multilineTextAlignment(.center)
@@ -124,7 +145,7 @@ struct OnboardingView: View {
         .init(
             id: "travel_reason",
             eyebrow: "Personalize setup",
-            title: "What kind of travel do you use PriceLens for?",
+            title: "What kind of travel do you use Pricetag AI for?",
             subtitle: "This helps make the first-run experience feel closer to your trips.",
             options: [
                 .init(id: "holiday", title: "Holidays", subtitle: "Menus, shops, attractions, and quick travel decisions.", icon: "sun.max.fill"),
@@ -136,7 +157,7 @@ struct OnboardingView: View {
             id: "scan_type",
             eyebrow: "Scanning style",
             title: "What will you scan most often?",
-            subtitle: "PriceLens works live, but Snap is best when there are many prices on one page.",
+            subtitle: "Pricetag AI works live, but Snap is best when there are many prices on one page.",
             options: [
                 .init(id: "menus", title: "Restaurant menus", subtitle: "Compare food prices without typing anything.", icon: "fork.knife"),
                 .init(id: "tags", title: "Price tags", subtitle: "Point at shelves, signs, and product labels.", icon: "tag.fill"),
@@ -149,7 +170,7 @@ struct OnboardingView: View {
             title: "How do you usually think about foreign prices?",
             subtitle: "The app stays camera-first either way. Manual convert is always available.",
             options: [
-                .init(id: "instant", title: "I want instant clarity", subtitle: "Show the converted price as soon as PriceLens sees it.", icon: "bolt.fill"),
+                .init(id: "instant", title: "I want instant clarity", subtitle: "Show the converted price as soon as Pricetag AI sees it.", icon: "bolt.fill"),
                 .init(id: "compare", title: "I compare a few options", subtitle: "Help me scan several prices smoothly.", icon: "rectangle.3.group.fill"),
                 .init(id: "double_check", title: "I like to double-check", subtitle: "Let me tap a result and see the rate behind it.", icon: "checkmark.shield.fill")
             ]
@@ -164,9 +185,7 @@ struct OnboardingProgressHeader: View {
     var body: some View {
         VStack(spacing: 10) {
             HStack {
-                Text("PriceLens")
-                    .font(.subheadline.bold())
-                    .foregroundStyle(AppTheme.textPrimary)
+                PricetagAIWordmark(font: .subheadline.bold())
                 Spacer()
                 Text("\(step)/\(totalSteps)")
                     .font(.caption.bold())

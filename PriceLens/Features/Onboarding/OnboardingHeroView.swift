@@ -94,7 +94,7 @@ struct OnboardingHeroView: View {
     private func captionTitle(_ phase: OnboardingHeroStoryPhase) -> String {
         switch phase {
         case .framing: return "① Spot the real tag"
-        case .scanning: return "② PriceLens reads the yen"
+        case .scanning: return "② Pricetag AI reads the yen"
         case .reveal: return "③ Your currency, instantly"
         }
     }

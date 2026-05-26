@@ -68,7 +68,7 @@ enum OnboardingScreenTexture {
                 .foregroundColor: UIColor.white,
                 .paragraphStyle: para,
             ]
-            let t = "PriceLens" as NSString
+            let t = "Pricetag AI" as NSString
             t.draw(in: CGRect(x: 24, y: 340, width: canvas.width - 48, height: 44), withAttributes: attrs)
 
             let subAttrs: [NSAttributedString.Key: Any] = [

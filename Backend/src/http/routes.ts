@@ -1,6 +1,7 @@
 import type { Router } from "express";
 import express from "express";
 import { z } from "zod";
+import { getAppVersionPolicy } from "../appVersion/appVersionRepository.js";
 import { config } from "../config.js";
 import { convertAmount, getLatestRates, syncLatestRates } from "../rates/rateService.js";
 
@@ -36,6 +37,27 @@ export function createRouter(): Router {
         to: query.to.toUpperCase(),
         convertedAmount,
         rates
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.get("/app-version/ios", async (request, response, next) => {
+    try {
+      const query = z.object({
+        version: z.string().optional()
+      }).parse(request.query);
+      const policy = await getAppVersionPolicy("ios");
+
+      if (!policy) {
+        response.status(404).json({ error: "No active iOS app version policy" });
+        return;
+      }
+
+      response.json({
+        ...policy,
+        currentVersion: query.version ?? null
       });
     } catch (error) {
       next(error);

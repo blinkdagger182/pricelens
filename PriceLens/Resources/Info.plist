@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>PriceLens</string>
+	<string>Pricetag AI</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -26,9 +26,9 @@
 		<true/>
 	</dict>
 	<key>NSCameraUsageDescription</key>
-	<string>PriceLens uses your camera to scan price tags and convert prices.</string>
+	<string>Pricetag AI uses your camera to scan price tags and convert prices.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>PriceLens uses your location to suggest the local travel currency.</string>
+	<string>Pricetag AI uses your location to suggest the local travel currency.</string>
 	<key>PRICE_LENS_API_BASE_URL</key>
 	<string>https://pricelens-backend.vercel.app</string>
 	<key>UILaunchScreen</key>

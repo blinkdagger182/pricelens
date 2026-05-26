@@ -8,4 +8,8 @@ enum AppStorageKeys {
     static let cachedExchangeRates = "cachedExchangeRates"
     static let favoriteCurrencyCodes = "favoriteCurrencyCodes"
     static let hasAutoDetectedTravelCurrency = "hasAutoDetectedTravelCurrency"
+    static let dismissedOptionalUpdateVersion = "dismissedOptionalUpdateVersion"
+    static let liveDetectionEnabled = "liveDetectionEnabled"
+    static let dailyUsageDateKey = "dailyUsageDateKey"
+    static let dailySnapCount = "dailySnapCount"
 }

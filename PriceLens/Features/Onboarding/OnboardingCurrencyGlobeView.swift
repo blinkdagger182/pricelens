@@ -16,7 +16,7 @@ struct OnboardingCurrencyGlobePage: View {
                     .font(.system(size: 34, weight: .heavy))
                     .foregroundStyle(AppTheme.textPrimary)
                     .multilineTextAlignment(.center)
-                Text("PriceLens starts with your storefront currency, then lets you switch home and travel currencies anytime.")
+                Text("Pricetag AI starts with your storefront currency, then lets you switch home and travel currencies anytime.")
                     .font(.body)
                     .foregroundStyle(AppTheme.textSecondary)
                     .multilineTextAlignment(.center)
@@ -37,11 +37,9 @@ private struct CurrencyGlobeView: View {
     private let markers: [GlobeCurrencyMarker] = [
         .init(id: "us", code: "USD", symbol: "$", flag: "🇺🇸", title: "United States", latitude: 40.71, longitude: -74.01),
         .init(id: "gb", code: "GBP", symbol: "£", flag: "🇬🇧", title: "United Kingdom", latitude: 51.51, longitude: -0.13),
-        .init(id: "eu", code: "EUR", symbol: "€", flag: "🇪🇺", title: "Euro Area", latitude: 48.86, longitude: 2.35),
         .init(id: "jp", code: "JPY", symbol: "¥", flag: "🇯🇵", title: "Japan", latitude: 35.68, longitude: 139.65),
         .init(id: "my", code: "MYR", symbol: "RM", flag: "🇲🇾", title: "Malaysia", latitude: 3.14, longitude: 101.69),
         .init(id: "au", code: "AUD", symbol: "A$", flag: "🇦🇺", title: "Australia", latitude: -33.87, longitude: 151.21),
-        .init(id: "sg", code: "SGD", symbol: "S$", flag: "🇸🇬", title: "Singapore", latitude: 1.35, longitude: 103.82),
         .init(id: "th", code: "THB", symbol: "฿", flag: "🇹🇭", title: "Thailand", latitude: 13.75, longitude: 100.5)
     ]
 

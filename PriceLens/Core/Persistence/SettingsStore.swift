@@ -9,6 +9,7 @@ final class SettingsStore: ObservableObject {
     @Published var homeCurrencyCode: String { didSet { defaults.set(homeCurrencyCode, forKey: AppStorageKeys.homeCurrencyCode) } }
     @Published var travelCurrencyCode: String { didSet { defaults.set(travelCurrencyCode, forKey: AppStorageKeys.travelCurrencyCode) } }
     @Published var favoriteCurrencyCodes: [String] { didSet { saveFavoriteCurrencies() } }
+    @Published var liveDetectionEnabled: Bool { didSet { defaults.set(liveDetectionEnabled, forKey: AppStorageKeys.liveDetectionEnabled) } }
 
     private let defaults: UserDefaults
     private let locationCurrencyService = LocationCurrencyService()
@@ -19,6 +20,7 @@ final class SettingsStore: ObservableObject {
         homeCurrencyCode = defaults.string(forKey: AppStorageKeys.homeCurrencyCode) ?? Locale.deviceCurrencyCode
         travelCurrencyCode = defaults.string(forKey: AppStorageKeys.travelCurrencyCode) ?? "JPY"
         favoriteCurrencyCodes = Self.loadFavoriteCurrencies(defaults: defaults)
+        liveDetectionEnabled = defaults.object(forKey: AppStorageKeys.liveDetectionEnabled) as? Bool ?? true
     }
 
     var homeCurrency: Currency { Currency.find(homeCurrencyCode) }

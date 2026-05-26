@@ -31,6 +31,14 @@ private enum SnapFlashMode: CaseIterable {
         case .off: return "off"
         }
     }
+
+    var shortTitle: String {
+        switch self {
+        case .auto: return "Auto"
+        case .on: return "On"
+        case .off: return "Off"
+        }
+    }
 }
 
 private struct UpgradeIndicatorPill: View {
@@ -57,7 +65,7 @@ private struct UpgradeIndicatorPill: View {
                 .strokeBorder(Color.white.opacity(0.32), lineWidth: 1)
         )
         .shadow(color: AppTheme.accent.opacity(0.38), radius: 12, y: 4)
-        .accessibilityLabel("Upgrade to PriceLens Plus")
+        .accessibilityLabel("Upgrade to Pricetag AI Plus")
     }
 }
 
@@ -65,6 +73,7 @@ struct ScannerView: View {
     @EnvironmentObject private var settings: SettingsStore
     @EnvironmentObject private var history: ScanHistoryStore
     @EnvironmentObject private var subscription: SubscriptionStore
+    @EnvironmentObject private var usageLimits: UsageLimitStore
     @StateObject private var viewModel = ScannerViewModel()
     @State private var showHistory = false
     @State private var showManual = false
@@ -82,7 +91,7 @@ struct ScannerView: View {
     @State private var showUpgradePaywall = false
     @State private var showRatesSheet = false
 
-    private let bottomChromeHeight: CGFloat = 152
+    private let bottomChromeHeight: CGFloat = 218
     private let cameraCornerRadius: CGFloat = 34
 
     var body: some View {
@@ -103,7 +112,9 @@ struct ScannerView: View {
                     .presentationDragIndicator(.visible)
             }
             .sheet(isPresented: $showHistory) { HistoryView() }
-            .sheet(isPresented: $showManual) { ManualConverterView() }
+            .sheet(isPresented: $showManual) {
+                ManualConverterView(initialTravelAmount: latestScannedTravelAmount)
+            }
             .sheet(isPresented: $showSettings, onDismiss: refreshBlockingUIPause) { SettingsView() }
             .sheet(isPresented: $showRatesSheet, onDismiss: refreshBlockingUIPause) {
                 RatesSheetView()
@@ -143,6 +154,15 @@ struct ScannerView: View {
             .onChange(of: selectedCurrencyRole) { _, _ in refreshBlockingUIPause() }
             .onChange(of: fullPickerRole) { _, _ in refreshBlockingUIPause() }
             .onChange(of: viewModel.selectedOverlay) { _, _ in refreshBlockingUIPause() }
+            .onChange(of: subscription.isPro) { _, isPro in
+                if isPro {
+                    showUpgradePaywall = false
+                    viewModel.resetDetectionState()
+                }
+            }
+            .onChange(of: settings.liveDetectionEnabled) { _, _ in
+                viewModel.resetDetectionState()
+            }
         }
     }
 
@@ -211,14 +231,19 @@ struct ScannerView: View {
     }
 
     private var bottomChrome: some View {
-        ZStack {
-            AppTheme.background
+        ZStack(alignment: .top) {
+            AppTheme.background.ignoresSafeArea()
+            VStack(spacing: 14) {
+                scannerActionRail
+                    .padding(.top, 10)
+
             ScannerControlsView(
                 isFrozen: $viewModel.isFrozen,
                 snap: startSnap,
                 showHistory: { showHistory = true },
                 showManual: { showManual = true }
             )
+            }
         }
     }
 
@@ -226,10 +251,18 @@ struct ScannerView: View {
         viewModel.scanProgress
     }
 
+    private var latestScannedTravelAmount: Decimal? {
+        guard let overlay = viewModel.overlays.max(by: { $0.lastSeenAt < $1.lastSeenAt }) else { return nil }
+        if overlay.sourceCurrencyCode == settings.travelCurrencyCode {
+            return overlay.amount
+        }
+        return ConversionEngine().convert(overlay.amount, from: overlay.sourceCurrencyCode, to: settings.travelCurrencyCode)
+    }
+
     private func scannerBackground(size: CGSize) -> some View {
         ZStack {
             DataScannerRepresentable(
-                onRecognizedItems: { items in viewModel.process(recognized: items, travelCurrency: settings.travelCurrencyCode, homeCurrency: settings.homeCurrencyCode, containerSize: size) },
+                onRecognizedItems: { items in processLiveItems(items, containerSize: size) },
                 onUnavailable: { viewModel.scannerUnavailable() },
                 onReady: { viewModel.scannerBecameAvailable() },
                 onCaptureReady: { capture in scannerPhotoCapture = capture }
@@ -289,23 +322,23 @@ struct ScannerView: View {
                 }
                 Spacer()
                 if !subscription.isPro {
-                    Button {
-                        showUpgradePaywall = true
-                    } label: {
-                        UpgradeIndicatorPill()
+                    VStack(alignment: .trailing, spacing: 5) {
+                        Button {
+                            presentUsagePaywall()
+                        } label: {
+                            UpgradeIndicatorPill()
+                        }
+                        .buttonStyle(.plain)
+                        .transition(.scale(scale: 0.9).combined(with: .opacity))
+
+                        Text("\(usageLimits.remainingSnaps) snaps left today")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(AppTheme.textSecondary)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(.black.opacity(0.42), in: Capsule())
                     }
-                    .buttonStyle(.plain)
-                    .transition(.scale(scale: 0.9).combined(with: .opacity))
                 }
-                Button { cycleSnapFlashMode() } label: {
-                    Image(systemName: snapFlashMode.iconName)
-                        .font(.headline)
-                        .foregroundStyle(snapFlashMode == .off ? .white : AppTheme.accent)
-                        .frame(width: 44, height: 44)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Snap flash \(snapFlashMode.accessibilityName)")
                 Button { showSettings = true } label: {
                     Image(systemName: "gearshape")
                         .font(.headline)
@@ -317,6 +350,47 @@ struct ScannerView: View {
             .padding(.horizontal, 18)
             Spacer()
         }
+    }
+
+    private var scannerActionRail: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+                RailToggleButton(
+                    title: "Scan",
+                    subtitle: subscription.isPro ? (settings.liveDetectionEnabled ? "Enabled" : "Disabled") : "Pro",
+                    icon: settings.liveDetectionEnabled && subscription.isPro ? "viewfinder.circle.fill" : "viewfinder",
+                    isActive: settings.liveDetectionEnabled && subscription.isPro,
+                    isLocked: !subscription.isPro,
+                    action: toggleLiveDetection
+                )
+
+                RailToggleButton(
+                    title: "Flash",
+                    subtitle: snapFlashMode.shortTitle,
+                    icon: snapFlashMode.iconName,
+                    isActive: snapFlashMode != .off,
+                    isLocked: false,
+                    action: cycleSnapFlashMode
+                )
+
+                railDivider
+
+                ForEach(conversionTemplates) { template in
+                    ConversionTemplatePill(template: template) {
+                        applyConversionTemplate(template)
+                    }
+                }
+            }
+            .padding(.horizontal, 16)
+        }
+        .frame(height: 74)
+    }
+
+    private var railDivider: some View {
+        Rectangle()
+            .fill(AppTheme.border)
+            .frame(width: 1, height: 44)
+            .padding(.horizontal, 3)
     }
 
     private var snapHint: some View {
@@ -346,6 +420,52 @@ struct ScannerView: View {
 
     private func cycleSnapFlashMode() {
         snapFlashMode = snapFlashMode.next
+    }
+
+    private func toggleLiveDetection() {
+        guard subscription.isPro else {
+            presentUsagePaywall()
+            return
+        }
+        settings.liveDetectionEnabled.toggle()
+    }
+
+    private var conversionTemplates: [ConversionTemplate] {
+        [
+            .init(source: "MYR", target: "USD"),
+            .init(source: "USD", target: "MYR"),
+            .init(source: "SGD", target: "MYR"),
+            .init(source: "JPY", target: "MYR"),
+            .init(source: "EUR", target: "MYR"),
+            .init(source: "GBP", target: "MYR"),
+            .init(source: "AUD", target: "MYR")
+        ]
+    }
+
+    private func applyConversionTemplate(_ template: ConversionTemplate) {
+        settings.selectHomeCurrency(template.target)
+        settings.selectTravelCurrency(template.source)
+        viewModel.resetDetectionState()
+    }
+
+    private func processLiveItems(_ items: [(String, CGRect)], containerSize: CGSize) {
+        guard settings.liveDetectionEnabled, usageLimits.canUseLiveScan(isPro: subscription.isPro) else {
+            viewModel.resetDetectionState()
+            return
+        }
+
+        viewModel.process(
+            recognized: items,
+            travelCurrency: settings.travelCurrencyCode,
+            homeCurrency: settings.homeCurrencyCode,
+            containerSize: containerSize,
+            maxPublishedOverlays: 5
+        )
+    }
+
+    private func presentUsagePaywall() {
+        guard !subscription.isPro else { return }
+        showUpgradePaywall = true
     }
 
     private func currencyPanel(for role: ScannerCurrencyRole) -> some View {
@@ -415,6 +535,10 @@ struct ScannerView: View {
 
     private func startSnap() {
         guard let scannerPhotoCapture else { return }
+        guard usageLimits.canUseSnap(isPro: subscription.isPro) else {
+            presentUsagePaywall()
+            return
+        }
         Task {
             await captureLiveSnap(scannerPhotoCapture)
         }
@@ -441,6 +565,7 @@ struct ScannerView: View {
             viewModel.isFrozen = wasFrozenBeforeSnapPreview
             return
         }
+        usageLimits.recordSnapIfNeeded(isPro: subscription.isPro)
         let canvasSize = cameraViewportSize.width > 0 && cameraViewportSize.height > 0 ? cameraViewportSize : capturedImage.size
         let snapItems = await stillImageSnapshotOverlays(for: capturedImage, canvasSize: canvasSize)
         let renderedImage = renderSnapshotImage(base: capturedImage, overlays: snapItems, canvasSize: canvasSize)
@@ -646,7 +771,7 @@ struct ScannerView: View {
     private func writeSnapshotForSharing(_ image: UIImage) -> URL? {
         guard let data = image.pngData() else { return nil }
         let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent("PriceLens-Snap-\(UUID().uuidString)")
+            .appendingPathComponent("PricetagAI-Snap-\(UUID().uuidString)")
             .appendingPathExtension("png")
         do {
             try data.write(to: url, options: .atomic)
@@ -680,6 +805,103 @@ private struct LiveScanBorderProgress: View {
         .frame(height: 8)
         .allowsHitTesting(false)
         .accessibilityHidden(true)
+    }
+}
+
+private struct ConversionTemplate: Identifiable, Equatable {
+    let source: String
+    let target: String
+
+    var id: String { "\(source)-\(target)" }
+}
+
+private struct RailToggleButton: View {
+    let title: String
+    let subtitle: String
+    let icon: String
+    let isActive: Bool
+    let isLocked: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 10) {
+                ZStack(alignment: .bottomTrailing) {
+                    Image(systemName: icon)
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundStyle(isActive ? AppTheme.accent : AppTheme.textPrimary)
+                        .frame(width: 34, height: 34)
+
+                    if isLocked {
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(.black)
+                            .frame(width: 16, height: 16)
+                            .background(AppTheme.accent, in: Circle())
+                            .offset(x: 3, y: 3)
+                    }
+                }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(AppTheme.textPrimary)
+                    Text(subtitle)
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(isActive ? AppTheme.accent : AppTheme.textSecondary)
+                }
+            }
+            .padding(.leading, 12)
+            .padding(.trailing, 14)
+            .frame(height: 56)
+            .background(
+                LinearGradient(
+                    colors: [
+                        AppTheme.surfaceSecondary.opacity(0.96),
+                        Color.black.opacity(0.82)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ),
+                in: Capsule()
+            )
+            .overlay(
+                Capsule()
+                    .strokeBorder(isActive ? AppTheme.accent.opacity(0.8) : AppTheme.border, lineWidth: isActive ? 1.4 : 1)
+            )
+            .shadow(color: isActive ? AppTheme.accent.opacity(0.22) : .clear, radius: 14, y: 5)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct ConversionTemplatePill: View {
+    let template: ConversionTemplate
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 7) {
+                Text(flag(for: template.source))
+                Text(template.source)
+                    .foregroundStyle(AppTheme.textPrimary)
+                Image(systemName: "arrow.right")
+                    .font(.caption.bold())
+                    .foregroundStyle(AppTheme.accent)
+                Text(template.target)
+                    .foregroundStyle(AppTheme.accent)
+            }
+            .font(.caption.weight(.bold))
+            .padding(.horizontal, 14)
+            .frame(height: 46)
+            .background(Color.black.opacity(0.66), in: Capsule())
+            .overlay(Capsule().strokeBorder(AppTheme.border, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func flag(for code: String) -> String {
+        Currency.find(code).flag
     }
 }
 

@@ -80,9 +80,17 @@ final class ScannerViewModel: ObservableObject {
         rateTrustLabel = Self.makeRateTrustLabel(from: rateService.statusSnapshot)
     }
 
-    func process(recognized: [(String, CGRect)], travelCurrency: String, homeCurrency: String, containerSize: CGSize, force: Bool = false) {
+    func process(
+        recognized: [(String, CGRect)],
+        travelCurrency: String,
+        homeCurrency: String,
+        containerSize: CGSize,
+        maxPublishedOverlays: Int = 5,
+        force: Bool = false
+    ) {
         guard !isFrozen else { return }
         let now = Date()
+        let overlayLimit = min(max(maxPublishedOverlays, 1), 5)
         shouldShowSnapHint = recognized.count >= 10
 
         let fastCandidates = prioritizedCandidates(
@@ -109,8 +117,9 @@ final class ScannerViewModel: ObservableObject {
             overlayRevealTask = nil
             pendingRevealCandidates = []
             pendingRevealKeys = []
-            updateDetections(with: Array(fastCandidates.prefix(5)), at: now)
-            let batchSignature = sceneSignature(for: Array(fastCandidates.prefix(5)))
+            let visibleCandidates = Array(fastCandidates.prefix(overlayLimit))
+            updateDetections(with: visibleCandidates, at: now)
+            let batchSignature = sceneSignature(for: visibleCandidates)
             guard force || overlays.isEmpty || batchSignature != lastLiveBatchSignature || now.timeIntervalSince(lastProcess) >= livePublishInterval else {
                 lastUsefulInputAt = now
                 return
@@ -118,7 +127,7 @@ final class ScannerViewModel: ObservableObject {
             lastProcess = now
             lastLiveBatchSignature = batchSignature
             publishLiveCandidateBatch(
-                Array(fastCandidates.prefix(5)),
+                visibleCandidates,
                 recognizedCount: recognized.count,
                 homeCurrency: homeCurrency,
                 containerSize: containerSize,
@@ -172,7 +181,7 @@ final class ScannerViewModel: ObservableObject {
 
         let deferredCandidates = Array(remainingCandidates.dropFirst(didPublishPrimary ? 0 : 1))
         enqueueSequentialReveal(
-            candidates: Array(deferredCandidates.prefix(4)),
+            candidates: Array(deferredCandidates.prefix(max(0, overlayLimit - 1))),
             recognizedCount: recognized.count,
             homeCurrency: homeCurrency,
             containerSize: containerSize

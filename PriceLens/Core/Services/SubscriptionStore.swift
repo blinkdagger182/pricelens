@@ -4,6 +4,7 @@ import RevenueCat
 @MainActor
 final class SubscriptionStore: ObservableObject {
     static let entitlementIdentifier = "pro"
+    static let paywallOfferingIdentifier = "PriceLens Pro Weekly"
 
     @Published private(set) var customerInfo: CustomerInfo?
     @Published private(set) var offerings: Offerings?
@@ -11,7 +12,7 @@ final class SubscriptionStore: ObservableObject {
     @Published private(set) var isPurchasing = false
     @Published var errorMessage: String?
 
-    private static let apiKey = "test_laOogpgavRqNpPSfezGtTNUNUIm"
+    private static let apiKey = "appl_NmzRajJULTaLIRFmgtfOeuhBHWW"
     private var customerInfoTask: Task<Void, Never>?
 
     var isPro: Bool {
@@ -22,8 +23,16 @@ final class SubscriptionStore: ObservableObject {
         offerings?.current
     }
 
+    var paywallOffering: Offering? {
+        offerings?[Self.paywallOfferingIdentifier] ?? offerings?.current
+    }
+
+    var availableOfferingIdentifiers: [String] {
+        offerings?.all.keys.sorted() ?? []
+    }
+
     var hasConfiguredProducts: Bool {
-        currentOffering?.availablePackages.isEmpty == false
+        paywallOffering?.availablePackages.isEmpty == false
     }
 
     static func configureRevenueCat() {
@@ -60,9 +69,15 @@ final class SubscriptionStore: ObservableObject {
 
         do {
             offerings = try await Purchases.shared.offerings()
+            if paywallOffering == nil {
+                let identifiers = availableOfferingIdentifiers.joined(separator: ", ")
+                errorMessage = identifiers.isEmpty
+                    ? "RevenueCat returned no offerings. Check that `PriceLens Pro Weekly` is configured and published."
+                    : "RevenueCat did not return `PriceLens Pro Weekly`. Available offerings: \(identifiers)."
+            }
         } catch {
             if errorMessage == nil {
-                errorMessage = "No RevenueCat offering is available yet. Configure products and an offering in RevenueCat."
+                errorMessage = "Could not load RevenueCat offering `PriceLens Pro Weekly`. \(error.localizedDescription)"
             }
         }
     }
