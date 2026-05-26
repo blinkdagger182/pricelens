@@ -1,7 +1,9 @@
 import SwiftUI
 import VisionKit
+import os
 
 struct DataScannerRepresentable: UIViewControllerRepresentable {
+    var isScanningEnabled: Bool
     var onRecognizedItems: ([(String, CGRect)]) -> Void
     var onUnavailable: () -> Void
     var onReady: () -> Void
@@ -48,7 +50,10 @@ struct DataScannerRepresentable: UIViewControllerRepresentable {
         #endif
     }
 
-    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
+    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {
+        guard let host = uiViewController as? ScannerHostViewController else { return }
+        host.setScanningEnabled(isScanningEnabled)
+    }
 
     func makeCoordinator() -> Coordinator {
         Coordinator(onRecognizedItems: onRecognizedItems)
@@ -59,6 +64,8 @@ struct DataScannerRepresentable: UIViewControllerRepresentable {
         private let onReady: () -> Void
         private let onUnavailable: () -> Void
         private var isScanning = false
+        private var isScanningEnabled = true
+        private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "PriceLens", category: "ScannerLifecycle")
 
         init(scanner: DataScannerViewController, onReady: @escaping () -> Void, onUnavailable: @escaping () -> Void) {
             self.scanner = scanner
@@ -93,13 +100,27 @@ struct DataScannerRepresentable: UIViewControllerRepresentable {
         }
 
         private func startIfNeeded() {
+            guard isScanningEnabled else { return }
             guard !isScanning else { return }
             do {
                 try scanner.startScanning()
                 isScanning = true
+                logger.debug("DataScanner start")
                 onReady()
             } catch {
                 onUnavailable()
+            }
+        }
+
+        func setScanningEnabled(_ enabled: Bool) {
+            guard isScanningEnabled != enabled else { return }
+            isScanningEnabled = enabled
+            if enabled {
+                startIfNeeded()
+            } else if isScanning {
+                scanner.stopScanning()
+                isScanning = false
+                logger.debug("DataScanner stop")
             }
         }
     }

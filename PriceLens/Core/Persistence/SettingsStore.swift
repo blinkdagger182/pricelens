@@ -21,6 +21,11 @@ final class SettingsStore: ObservableObject {
         travelCurrencyCode = defaults.string(forKey: AppStorageKeys.travelCurrencyCode) ?? "JPY"
         favoriteCurrencyCodes = Self.loadFavoriteCurrencies(defaults: defaults)
         liveDetectionEnabled = defaults.object(forKey: AppStorageKeys.liveDetectionEnabled) as? Bool ?? true
+        #if DEBUG
+        if let forcedLiveScan = ProcessInfo.processInfo.environment["PRICETAGAI_FORCE_LIVE_SCAN"] {
+            liveDetectionEnabled = forcedLiveScan == "1"
+        }
+        #endif
     }
 
     var homeCurrency: Currency { Currency.find(homeCurrencyCode) }

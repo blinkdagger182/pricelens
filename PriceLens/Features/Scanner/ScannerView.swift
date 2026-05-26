@@ -64,6 +64,8 @@ struct ScannerView: View {
     @State private var showRatesSheet = false
     @State private var snapQuotaToastMessage: String?
     @State private var snapQuotaToastTask: Task<Void, Never>?
+    @AppStorage(AppStorageKeys.hasSeenScanUpsell) private var hasSeenScanUpsell = false
+    @State private var showScanUpsell = false
 
     private let bottomChromeHeight: CGFloat = 218
     private let cameraCornerRadius: CGFloat = 34
@@ -104,6 +106,21 @@ struct ScannerView: View {
                     .presentationDetents([.large])
                     .presentationDragIndicator(.visible)
             }
+            .fullScreenCover(isPresented: $showScanUpsell, onDismiss: refreshBlockingUIPause) {
+                ScanFeatureUpsellView(
+                    onClose: {
+                        hasSeenScanUpsell = true
+                        showScanUpsell = false
+                    },
+                    onUpgrade: {
+                        hasSeenScanUpsell = true
+                        showScanUpsell = false
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) {
+                            showUpgradePaywall = true
+                        }
+                    }
+                )
+            }
             .sheet(isPresented: $showUpgradePaywall, onDismiss: {
                 refreshBlockingUIPause()
                 Task {
@@ -133,6 +150,7 @@ struct ScannerView: View {
             }
             .onChange(of: showSettings) { _, _ in refreshBlockingUIPause() }
             .onChange(of: showRatesSheet) { _, _ in refreshBlockingUIPause() }
+            .onChange(of: showScanUpsell) { _, _ in refreshBlockingUIPause() }
             .onChange(of: showUpgradePaywall) { _, _ in refreshBlockingUIPause() }
             .onChange(of: selectedCurrencyRole) { _, _ in refreshBlockingUIPause() }
             .onChange(of: fullPickerRole) { _, _ in refreshBlockingUIPause() }
@@ -201,6 +219,7 @@ struct ScannerView: View {
             .task(id: "\(Int(size.width))x\(Int(size.height))") {
                 while !Task.isCancelled {
                     try? await Task.sleep(for: .milliseconds(500))
+                    guard isScannerPreviewActive else { continue }
                     viewModel.pruneStaleOverlays(homeCurrency: settings.homeCurrencyCode, containerSize: size)
                 }
             }
@@ -242,9 +261,25 @@ struct ScannerView: View {
         return ConversionEngine().convert(overlay.amount, from: overlay.sourceCurrencyCode, to: settings.travelCurrencyCode)
     }
 
+    private var isScannerPreviewActive: Bool {
+        !showHistory
+            && !showManual
+            && !showSettings
+            && !showRatesSheet
+            && !showScanUpsell
+            && !showUpgradePaywall
+            && snapshotPreview == nil
+            && fullPickerRole == nil
+            && selectedCurrencyRole == nil
+            && viewModel.selectedOverlay == nil
+            && settings.liveDetectionEnabled
+            && usageLimits.canUseLiveScan(isPro: subscription.isPro)
+    }
+
     private func scannerBackground(size: CGSize) -> some View {
         ZStack {
             DataScannerRepresentable(
+                isScanningEnabled: isScannerPreviewActive,
                 onRecognizedItems: { items in processLiveItems(items, containerSize: size) },
                 onUnavailable: { viewModel.scannerUnavailable() },
                 onReady: { viewModel.scannerBecameAvailable() },
@@ -389,7 +424,11 @@ struct ScannerView: View {
 
     private func toggleLiveDetection() {
         guard subscription.isPro else {
-            presentUsagePaywall()
+            if hasSeenScanUpsell {
+                presentUsagePaywall()
+            } else {
+                showScanUpsell = true
+            }
             return
         }
         settings.liveDetectionEnabled.toggle()
@@ -423,7 +462,7 @@ struct ScannerView: View {
 
     private func processLiveItems(_ items: [(String, CGRect)], containerSize: CGSize) {
         guard settings.liveDetectionEnabled, usageLimits.canUseLiveScan(isPro: subscription.isPro) else {
-            viewModel.resetDetectionState()
+            viewModel.resetDetectionStateIfNeeded()
             return
         }
 
@@ -469,7 +508,7 @@ struct ScannerView: View {
 
     @MainActor
     private func refreshBlockingUIPause() {
-        let shouldPause = showSettings || showRatesSheet || showUpgradePaywall || selectedCurrencyRole != nil || fullPickerRole != nil || viewModel.selectedOverlay != nil
+        let shouldPause = showSettings || showRatesSheet || showScanUpsell || showUpgradePaywall || selectedCurrencyRole != nil || fullPickerRole != nil || viewModel.selectedOverlay != nil
         if shouldPause, !isBlockingUIPauseActive {
             wasFrozenBeforeBlockingUI = viewModel.isFrozen
             isBlockingUIPauseActive = true
@@ -960,6 +999,116 @@ private struct SnapshotPriceOverlay: Identifiable {
     let converted: String
     let bounds: CGRect
     let overlay: PriceOverlayItem
+}
+
+private struct ScanFeatureUpsellView: View {
+    let onClose: () -> Void
+    let onUpgrade: () -> Void
+
+    var body: some View {
+        ZStack(alignment: .topTrailing) {
+            AppTheme.background.ignoresSafeArea()
+            VStack(spacing: 0) {
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 22) {
+                        OnboardingHeroView()
+                            .frame(height: 430)
+                            .padding(.top, 18)
+
+                        VStack(spacing: 12) {
+                            Text("Unlock Live Scan")
+                                .font(.system(size: 40, weight: .black, design: .rounded))
+                                .foregroundStyle(AppTheme.textPrimary)
+                                .multilineTextAlignment(.center)
+                                .lineLimit(2)
+                                .minimumScaleFactor(0.8)
+
+                            Text("No snapping. No typing. Point your camera at menus, shelves, or receipts and Pricetag AI converts prices as they appear.")
+                                .font(.title3.weight(.medium))
+                                .foregroundStyle(AppTheme.textSecondary)
+                                .multilineTextAlignment(.center)
+                                .lineSpacing(3)
+                        }
+                        .padding(.horizontal, 22)
+
+                        VStack(spacing: 10) {
+                            ScanUpsellBenefit(icon: "viewfinder.circle.fill", title: "Auto-detect prices live", subtitle: "Converted cards appear over the camera view without taking a photo.")
+                            ScanUpsellBenefit(icon: "bolt.fill", title: "Built for quick travel checks", subtitle: "Scan menus and shelf labels faster when you only need the price.")
+                            ScanUpsellBenefit(icon: "infinity", title: "Unlimited Pro scanning", subtitle: "Live scan is included with Pricetag AI Pro.")
+                        }
+                        .padding(.horizontal, 20)
+                    }
+                    .padding(.bottom, 22)
+                }
+
+                VStack(spacing: 10) {
+                    PrimaryButton(title: "Continue to Pricetag AI Pro", action: onUpgrade)
+                    Text("Live Scan is a Pro feature. Snap conversion remains available on the free plan.")
+                        .font(.caption)
+                        .foregroundStyle(AppTheme.textSecondary)
+                        .multilineTextAlignment(.center)
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 14)
+                .padding(.bottom, 18)
+                .background(
+                    LinearGradient(
+                        colors: [AppTheme.background.opacity(0.1), AppTheme.background],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    .ignoresSafeArea(edges: .bottom)
+                )
+            }
+
+            Button(action: onClose) {
+                Image(systemName: "xmark")
+                    .font(.headline.bold())
+                    .foregroundStyle(AppTheme.textPrimary)
+                    .frame(width: 48, height: 48)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .padding(.top, 12)
+            .padding(.trailing, 12)
+            .accessibilityLabel("Close scan tutorial")
+        }
+    }
+}
+
+private struct ScanUpsellBenefit: View {
+    let icon: String
+    let title: String
+    let subtitle: String
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.headline.bold())
+                .foregroundStyle(AppTheme.accent)
+                .frame(width: 38, height: 38)
+                .background(AppTheme.accent.opacity(0.12), in: Circle())
+                .overlay(Circle().stroke(AppTheme.accent.opacity(0.28), lineWidth: 1))
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.subheadline.bold())
+                    .foregroundStyle(AppTheme.textPrimary)
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundStyle(AppTheme.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(14)
+        .background(AppTheme.surface.opacity(0.9), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(AppTheme.border, lineWidth: 1)
+        )
+    }
 }
 
 private struct SnapshotRenderedImage: View {

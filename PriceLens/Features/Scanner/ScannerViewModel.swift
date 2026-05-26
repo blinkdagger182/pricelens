@@ -761,7 +761,7 @@ final class ScannerViewModel: ObservableObject {
             return
         }
 
-        motionManager.deviceMotionUpdateInterval = 1.0 / 30.0
+        motionManager.deviceMotionUpdateInterval = 1.0 / 15.0
         motionManager.startDeviceMotionUpdates(to: .main) { [weak self] motion, _ in
             guard let motion else { return }
             Task { @MainActor in
@@ -862,6 +862,17 @@ final class ScannerViewModel: ObservableObject {
                 state = .scanning
             }
         }
+    }
+
+    func resetDetectionStateIfNeeded() {
+        guard !overlays.isEmpty
+                || !detections.isEmpty
+                || scanProgress > 0
+                || shouldShowSnapHint
+                || state == .pricesDetected else {
+            return
+        }
+        resetDetectionState()
     }
 
     func pruneStaleOverlays(homeCurrency: String, containerSize: CGSize) {

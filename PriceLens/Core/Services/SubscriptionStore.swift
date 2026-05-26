@@ -16,7 +16,12 @@ final class SubscriptionStore: ObservableObject {
     private var customerInfoTask: Task<Void, Never>?
 
     var isPro: Bool {
-        customerInfo?.entitlements[Self.entitlementIdentifier]?.isActive == true
+        #if DEBUG
+        if ProcessInfo.processInfo.environment["PRICETAGAI_FORCE_PRO"] == "1" {
+            return true
+        }
+        #endif
+        return customerInfo?.entitlements[Self.entitlementIdentifier]?.isActive == true
     }
 
     var currentOffering: Offering? {
